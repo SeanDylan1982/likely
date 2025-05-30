@@ -6,28 +6,28 @@ const headers = {
   'Content-Type': 'application/json'
 };
 
-export async function searchMovies(query: string): Promise<Movie[]> {
+export async function searchContent(query: string, type: ContentType): Promise<Movie[] | TVShow[]> {
   const response = await fetch(
-    `${BASE_URL}/search/movie?query=${encodeURIComponent(query)}`,
+    `${BASE_URL}/search/${type}?query=${encodeURIComponent(query)}`,
     { headers }
   );
   const data: SearchResponse = await response.json();
   return data.results;
 }
 
-export async function getSimilarMovies(movieId: number): Promise<Movie[]> {
+export async function getSimilarContent(id: number, type: ContentType): Promise<Movie[] | TVShow[]> {
   const response = await fetch(
-    `${BASE_URL}/movie/${movieId}/similar`,
+    `${BASE_URL}/${type}/${id}/similar`,
     { headers }
   );
   const data: SearchResponse = await response.json();
   return data.results;
 }
 
-export async function getSearchSuggestions(query: string): Promise<Movie[]> {
+export async function getSearchSuggestions(query: string, type: ContentType): Promise<Movie[] | TVShow[]> {
   if (!query.trim()) return [];
   const response = await fetch(
-    `${BASE_URL}/search/movie?query=${encodeURIComponent(query)}&page=1`,
+    `${BASE_URL}/search/${type}?query=${encodeURIComponent(query)}&page=1`,
     { headers }
   );
   const data: SearchResponse = await response.json();
