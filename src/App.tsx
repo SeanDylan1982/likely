@@ -87,6 +87,12 @@ function App() {
   const getFilteredAndSortedContent = () => {
     let filtered = mode === 'recommendations' ? recommendations : content;
 
+    // Convert 10-star ratings to 5-star ratings for filtering
+    filtered = filtered.map(item => ({
+      ...item,
+      vote_average: item.vote_average / 2
+    }));
+
     // Apply minimum rating filter
     filtered = filtered.filter(item => item.vote_average >= minRating);
 
@@ -213,7 +219,7 @@ function App() {
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold">Entertainment Finder</h1>
+          <h1 className="text-4xl font-bold">Likely</h1>
           <div className="flex items-center gap-4">
             {user ? (
               <div className="flex items-center gap-4">

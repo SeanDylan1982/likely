@@ -114,6 +114,7 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
                     const date = type === 'movie' 
                       ? (content as Movie).release_date 
                       : (content as TVShow).first_air_date;
+                    const rating = content.vote_average / 2;
 
                     return (
                       <div 
@@ -136,7 +137,7 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
                             </span>
                             <span className="flex items-center text-yellow-500 text-sm">
                               <Star size={14} className="fill-current" />
-                              <span className="ml-1">{content.vote_average.toFixed(1)}</span>
+                              <span className="ml-1">{rating.toFixed(1)}</span>
                             </span>
                           </div>
                         </div>
@@ -155,6 +156,7 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
               const date = type === 'movie' 
                 ? (content as Movie).release_date 
                 : (content as TVShow).first_air_date;
+              const rating = content.vote_average / 2;
 
               return (
                 <div 
@@ -174,7 +176,7 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
                       <h3 className="font-bold text-lg">{title}</h3>
                       <span className="flex items-center text-yellow-500 bg-yellow-50 px-2 py-1 rounded">
                         <Star size={16} className="fill-current" />
-                        <span className="ml-1">{content.vote_average.toFixed(1)}</span>
+                        <span className="ml-1">{rating.toFixed(1)}</span>
                       </span>
                     </div>
                     <p className="text-sm text-gray-500 mt-1">
