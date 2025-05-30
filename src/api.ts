@@ -15,13 +15,13 @@ export async function searchContent(query: string, type: ContentType): Promise<M
   return data.results;
 }
 
-export async function getSimilarContent(id: number, type: ContentType): Promise<Movie[] | TVShow[]> {
+export async function getSimilarContent(id: number, type: ContentType, page: number = 1): Promise<SearchResponse> {
   const response = await fetch(
-    `${BASE_URL}/${type}/${id}/similar`,
+    `${BASE_URL}/${type}/${id}/similar?page=${page}`,
     { headers }
   );
   const data: SearchResponse = await response.json();
-  return data.results;
+  return data;
 }
 
 export async function getSearchSuggestions(query: string, type: ContentType): Promise<Movie[] | TVShow[]> {
