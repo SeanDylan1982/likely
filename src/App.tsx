@@ -91,17 +91,17 @@ function App() {
       const movieFavorites = favorites.filter(f => f.content_type === 'movie');
       const tvFavorites = favorites.filter(f => f.content_type === 'tv');
 
-      const [movieRecs, tvRecs] = await Promise.all([
+      const [movieResults, tvResults] = await Promise.all([
         Promise.all(movieFavorites.map(f => getSimilarContent(f.content_id, 'movie'))),
         Promise.all(tvFavorites.map(f => getSimilarContent(f.content_id, 'tv')))
       ]);
 
       const uniqueMovies = Array.from(
-        new Map(movieRecs.flat().map(item => [item.id, item])).values()
+        new Map(movieResults.flat().map(item => [item.id, item])).values()
       ) as Movie[];
       
       const uniqueTVShows = Array.from(
-        new Map(tvRecs.flat().map(item => [item.id, item])).values()
+        new Map(tvResults.flat().map(item => [item.id, item])).values()
       ) as TVShow[];
 
       setMovieRecommendations(uniqueMovies);
