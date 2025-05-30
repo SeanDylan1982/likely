@@ -26,9 +26,10 @@ function App() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [user, setUser] = useState<UserType | null>(null);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
-  const [recommendations, setRecommendations] = useState<(Movie | TVShow)[]>([]);
+  const [movieRecommendations, setMovieRecommendations] = useState<Movie[]>([]);
+  const [tvRecommendations, setTvRecommendations] = useState<TVShow[]>([]);
   const [sortBy, setSortBy] = useState<'popularity' | 'date-asc' | 'date-desc' | 'rating'>('popularity');
-  const [minRating, setMinRating] = useState(0);
+  const [minRating, setMinRating] = useState(3);
   const [yearFilter, setYearFilter] = useState<number | null>(null);
   const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
   const [trendingTVShows, setTrendingTVShows] = useState<TVShow[]>([]);
@@ -60,7 +61,8 @@ function App() {
       } else {
         setUser(null);
         setFavorites([]);
-        setRecommendations([]);
+        setMovieRecommendations([]);
+        setTvRecommendations([]);
       }
     });
 
@@ -85,19 +87,24 @@ function App() {
   const fetchRecommendations = async (favorites: Favorite[]) => {
     setLoading(true);
     try {
-      const allRecommendations: (Movie | TVShow)[] = [];
+      const movieFavorites = favorites.filter(f => f.content_type === 'movie');
+      const tvFavorites = favorites.filter(f => f.content_type === 'tv');
+
+      const [movieRecs, tvRecs] = await Promise.all([
+        Promise.all(movieFavorites.map(f => getSimilarContent(f.content_id, 'movie'))),
+        Promise.all(tvFavorites.map(f => getSimilarContent(f.content_id, 'tv')))
+      ]);
+
+      const uniqueMovies = Array.from(
+        new Map(movieRecs.flat().map(item => [item.id, item])).values()
+      ) as Movie[];
       
-      for (const favorite of favorites) {
-        const similar = await getSimilarContent(favorite.content_id, favorite.content_type);
-        allRecommendations.push(...similar);
-      }
+      const uniqueTVShows = Array.from(
+        new Map(tvRecs.flat().map(item => [item.id, item])).values()
+      ) as TVShow[];
 
-      // Remove duplicates based on id
-      const uniqueRecommendations = Array.from(
-        new Map(allRecommendations.map(item => [item.id, item])).values()
-      );
-
-      setRecommendations(uniqueRecommendations);
+      setMovieRecommendations(uniqueMovies);
+      setTvRecommendations(uniqueTVShows);
     } catch (err) {
       console.error('Error fetching recommendations:', err);
     } finally {
@@ -105,19 +112,16 @@ function App() {
     }
   };
 
-  const getFilteredAndSortedContent = () => {
-    let filtered = mode === 'recommendations' ? recommendations : content;
+  const getFilteredAndSortedContent = (items: (Movie | TVShow)[]) => {
+    let filtered = items;
 
-    // Convert 10-star ratings to 5-star ratings for filtering
     filtered = filtered.map(item => ({
       ...item,
       vote_average: item.vote_average / 2
     }));
 
-    // Apply minimum rating filter
     filtered = filtered.filter(item => item.vote_average >= minRating);
 
-    // Apply year filter
     if (yearFilter) {
       filtered = filtered.filter(item => {
         const date = 'release_date' in item ? item.release_date : item.first_air_date;
@@ -125,7 +129,6 @@ function App() {
       });
     }
 
-    // Apply sorting
     return [...filtered].sort((a, b) => {
       if (sortBy === 'rating') {
         return b.vote_average - a.vote_average;
@@ -136,7 +139,6 @@ function App() {
           ? dateB.getTime() - dateA.getTime()
           : dateA.getTime() - dateB.getTime();
       }
-      // Default to popularity
       return b.popularity - a.popularity;
     });
   };
@@ -236,8 +238,6 @@ function App() {
     handleContentSelect(item);
   };
 
-  const filteredContent = getFilteredAndSortedContent();
-
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-6xl mx-auto">
@@ -271,14 +271,66 @@ function App() {
         </div>
 
         {mode === 'recommendations' ? (
-          <FilterControls
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-            minRating={minRating}
-            onMinRatingChange={setMinRating}
-            yearFilter={yearFilter}
-            onYearFilterChange={setYearFilter}
-          />
+          <>
+            <FilterControls
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+              minRating={minRating}
+              onMinRatingChange={setMinRating}
+              yearFilter={yearFilter}
+              onYearFilterChange={setYearFilter}
+            />
+
+            <div className="space-y-8">
+              <div>
+                <h2 className="text-2xl font-semibold mb-4">Movie Recommendations</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {getFilteredAndSortedContent(movieRecommendations).map((movie) => (
+                    <ContentCard
+                      key={movie.id}
+                      content={movie}
+                      type="movie"
+                      onSelect={handleContentSelect}
+                      isAuthenticated={!!user}
+                      isFavorite={favorites.some(
+                        f => f.content_id === movie.id && f.content_type === 'movie'
+                      )}
+                      onToggleFavorite={() => toggleFavorite(movie)}
+                    />
+                  ))}
+                </div>
+                {movieRecommendations.length === 0 && (
+                  <div className="text-center text-gray-500">
+                    No movie recommendations yet. Try adding some movies to your favorites!
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <h2 className="text-2xl font-semibold mb-4">TV Show Recommendations</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {getFilteredAndSortedContent(tvRecommendations).map((show) => (
+                    <ContentCard
+                      key={show.id}
+                      content={show}
+                      type="tv"
+                      onSelect={handleContentSelect}
+                      isAuthenticated={!!user}
+                      isFavorite={favorites.some(
+                        f => f.content_id === show.id && f.content_type === 'tv'
+                      )}
+                      onToggleFavorite={() => toggleFavorite(show)}
+                    />
+                  ))}
+                </div>
+                {tvRecommendations.length === 0 && (
+                  <div className="text-center text-gray-500">
+                    No TV show recommendations yet. Try adding some TV shows to your favorites!
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
         ) : (
           <>
             <div className="flex justify-center gap-4 mb-6">
@@ -406,9 +458,9 @@ function App() {
 
         {loading ? (
           <div className="text-center">Loading...</div>
-        ) : (
+        ) : mode !== 'recommendations' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredContent.map((item) => (
+            {getFilteredAndSortedContent(content).map((item) => (
               <ContentCard
                 key={item.id}
                 content={item}
@@ -424,13 +476,11 @@ function App() {
           </div>
         )}
 
-        {!loading && filteredContent.length === 0 && (
+        {!loading && mode !== 'recommendations' && content.length === 0 && (
           <div className="text-center text-gray-500">
-            {mode === 'recommendations' 
-              ? "No recommendations found. Try adding more favorites!"
-              : mode === 'search'
-                ? `Search for ${contentType === 'movie' ? 'movies' : 'TV shows'} to get started`
-                : `No similar ${contentType === 'movie' ? 'movies' : 'TV shows'} found`}
+            {mode === 'search'
+              ? `Search for ${contentType === 'movie' ? 'movies' : 'TV shows'} to get started`
+              : `No similar ${contentType === 'movie' ? 'movies' : 'TV shows'} found`}
           </div>
         )}
       </div>
