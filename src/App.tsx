@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Search, X, Film, Tv, LogOut, User } from 'lucide-react';
+import { Search, X, Film, Tv } from 'lucide-react';
 import { useDebounce } from 'use-debounce';
 import { ContentCard } from './components/MovieCard';
 import { AuthModal } from './components/AuthModal';
+import { UserDropdown } from './components/UserDropdown';
+import { UserProfile } from './components/UserProfile';
 import { searchContent, getSimilarContent, getSearchSuggestions } from './api';
 import { supabase } from './supabase';
 import type { Movie, TVShow, ContentType, User as UserType, Favorite } from './types';
@@ -19,6 +21,7 @@ function App() {
   const [selectedContent, setSelectedContent] = useState<Movie | TVShow | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [user, setUser] = useState<UserType | null>(null);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
 
@@ -155,19 +158,11 @@ function App() {
           <h1 className="text-4xl font-bold">Entertainment Finder</h1>
           <div className="flex items-center gap-4">
             {user ? (
-              <div className="flex items-center gap-4">
-                <span className="flex items-center gap-2">
-                  <User size={20} />
-                  {user.email}
-                </span>
-                <button
-                  onClick={handleSignOut}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-                >
-                  <LogOut size={20} />
-                  Sign Out
-                </button>
-              </div>
+              <UserDropdown
+                email={user.email}
+                onSignOut={handleSignOut}
+                onProfileClick={() => setIsProfileOpen(true)}
+              />
             ) : (
               <button
                 onClick={() => setIsAuthModalOpen(true)}
@@ -312,6 +307,13 @@ function App() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
       />
+
+      {isProfileOpen && user && (
+        <UserProfile
+          userId={user.id}
+          onClose={() => setIsProfileOpen(false)}
+        />
+      )}
     </div>
   );
 }
