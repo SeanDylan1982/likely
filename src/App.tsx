@@ -33,6 +33,7 @@ function App() {
   const [yearFilter, setYearFilter] = useState<number | null>(null);
   const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
   const [trendingTVShows, setTrendingTVShows] = useState<TVShow[]>([]);
+  const [activeTab, setActiveTab] = useState<ContentType>('movie');
 
   useEffect(() => {
     async function fetchTrending() {
@@ -333,31 +334,6 @@ function App() {
           </>
         ) : (
           <>
-            <div className="flex justify-center gap-4 mb-6">
-              <button
-                onClick={() => setContentType('movie')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                  contentType === 'movie'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <Film size={20} />
-                Movies
-              </button>
-              <button
-                onClick={() => setContentType('tv')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                  contentType === 'tv'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <Tv size={20} />
-                TV Shows
-              </button>
-            </div>
-
             <form onSubmit={handleSearch} className="mb-8">
               <div className="relative max-w-xl mx-auto">
                 <input
@@ -456,32 +432,76 @@ function App() {
           <div className="text-red-500 text-center mb-4">{error}</div>
         )}
 
-        {loading ? (
-          <div className="text-center">Loading...</div>
-        ) : mode !== 'recommendations' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {getFilteredAndSortedContent(content).map((item) => (
-              <ContentCard
-                key={item.id}
-                content={item}
-                type={contentType}
-                onSelect={handleContentSelect}
-                isAuthenticated={!!user}
-                isFavorite={favorites.some(
-                  f => f.content_id === item.id && f.content_type === contentType
-                )}
-                onToggleFavorite={() => toggleFavorite(item)}
-              />
-            ))}
-          </div>
-        )}
+        {mode !== 'recommendations' && (
+          <>
+            <FilterControls
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+              minRating={minRating}
+              onMinRatingChange={setMinRating}
+              yearFilter={yearFilter}
+              onYearFilterChange={setYearFilter}
+            />
 
-        {!loading && mode !== 'recommendations' && content.length === 0 && (
-          <div className="text-center text-gray-500">
-            {mode === 'search'
-              ? `Search for ${contentType === 'movie' ? 'movies' : 'TV shows'} to get started`
-              : `No similar ${contentType === 'movie' ? 'movies' : 'TV shows'} found`}
-          </div>
+            <div className="flex justify-center gap-4 mb-6">
+              <button
+                onClick={() => {
+                  setActiveTab('movie');
+                  setContentType('movie');
+                }}
+                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+                  activeTab === 'movie'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <Film size={20} />
+                Movies
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('tv');
+                  setContentType('tv');
+                }}
+                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+                  activeTab === 'tv'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <Tv size={20} />
+                TV Shows
+              </button>
+            </div>
+
+            {loading ? (
+              <div className="text-center">Loading...</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {getFilteredAndSortedContent(content).map((item) => (
+                  <ContentCard
+                    key={item.id}
+                    content={item}
+                    type={contentType}
+                    onSelect={handleContentSelect}
+                    isAuthenticated={!!user}
+                    isFavorite={favorites.some(
+                      f => f.content_id === item.id && f.content_type === contentType
+                    )}
+                    onToggleFavorite={() => toggleFavorite(item)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {!loading && content.length === 0 && (
+              <div className="text-center text-gray-500">
+                {mode === 'search'
+                  ? `Search for ${activeTab === 'movie' ? 'movies' : 'TV shows'} to get started`
+                  : `No similar ${activeTab === 'movie' ? 'movies' : 'TV shows'} found`}
+              </div>
+            )}
+          </>
         )}
       </div>
 
