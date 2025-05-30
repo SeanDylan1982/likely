@@ -74,7 +74,7 @@ export function FilterControls({
           <input
             type="range"
             min="0"
-            max="10"
+            max="5"
             step="0.5"
             value={minRating}
             onChange={(e) => onMinRatingChange(parseFloat(e.target.value))}

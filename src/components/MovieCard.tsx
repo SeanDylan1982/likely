@@ -24,6 +24,9 @@ export function ContentCard({
     ? (content as Movie).release_date 
     : (content as TVShow).first_air_date;
 
+  // Convert 10-star rating to 5-star rating
+  const rating = content.vote_average / 2;
+
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden relative">
       <div 
@@ -44,7 +47,7 @@ export function ContentCard({
           <div className="flex items-center justify-between">
             <span className="flex items-center text-yellow-500">
               <Star size={16} className="fill-current" />
-              <span className="ml-1">{content.vote_average.toFixed(1)}</span>
+              <span className="ml-1">{rating.toFixed(1)}</span>
             </span>
             <span className="text-sm text-gray-500">
               {new Date(date).getFullYear()}
