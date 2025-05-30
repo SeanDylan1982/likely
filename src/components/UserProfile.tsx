@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { X } from 'lucide-react';
 import { FilterControls } from './FilterControls';
 import { ContentCard } from './MovieCard';
 import { supabase } from '../supabase';
-import type { Movie, TVShow, ContentType } from '../types';
+import { getSimilarContent } from '../api';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
+import type { Movie, TVShow, ContentType, Favorite, RecommendationSource } from '../types';
 
 interface UserProfileProps {
   userId: string;
@@ -12,11 +14,16 @@ interface UserProfileProps {
 
 export function UserProfile({ userId, onClose }: UserProfileProps) {
   const [favorites, setFavorites] = useState<(Movie | TVShow)[]>([]);
+  const [recommendations, setRecommendations] = useState<(Movie | TVShow)[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [selectedTab, setSelectedTab] = useState<ContentType>('movie');
   const [sortBy, setSortBy] = useState<'popularity' | 'date-asc' | 'date-desc' | 'rating'>('popularity');
   const [minRating, setMinRating] = useState(3);
   const [yearFilter, setYearFilter] = useState<number | null>(null);
+  const [recommendationSources, setRecommendationSources] = useState<RecommendationSource[]>([]);
+  
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function fetchFavorites() {
@@ -44,6 +51,20 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
 
         const contents = await Promise.all(contentPromises);
         setFavorites(contents);
+
+        // Initialize recommendation sources
+        const sources = contents
+          .filter(content => content.contentType === selectedTab)
+          .map(content => ({
+            id: content.id,
+            type: content.contentType as ContentType,
+            currentPage: 1,
+            totalPages: 1,
+            hasMore: true
+          }));
+        
+        setRecommendationSources(sources);
+        await loadInitialRecommendations(sources);
       } catch (error) {
         console.error('Error fetching favorites:', error);
       } finally {
@@ -52,11 +73,75 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
     }
 
     fetchFavorites();
-  }, [userId]);
+  }, [userId, selectedTab]);
+
+  const loadInitialRecommendations = async (sources: RecommendationSource[]) => {
+    try {
+      const results = await Promise.all(
+        sources.map(source =>
+          getSimilarContent(source.id, source.type, 1)
+        )
+      );
+
+      const newRecommendations = results.flatMap(result => result.results);
+      const updatedSources = sources.map((source, index) => ({
+        ...source,
+        totalPages: results[index].total_pages,
+        hasMore: results[index].page < results[index].total_pages
+      }));
+
+      setRecommendations(newRecommendations);
+      setRecommendationSources(updatedSources);
+    } catch (error) {
+      console.error('Error loading initial recommendations:', error);
+    }
+  };
+
+  const loadMoreRecommendations = async () => {
+    if (loadingMore) return;
+
+    const sourcesWithMore = recommendationSources.filter(source => source.hasMore);
+    if (sourcesWithMore.length === 0) return;
+
+    setLoadingMore(true);
+
+    try {
+      const results = await Promise.all(
+        sourcesWithMore.map(source =>
+          getSimilarContent(source.id, source.type, source.currentPage + 1)
+        )
+      );
+
+      const newRecommendations = results.flatMap(result => result.results);
+      const updatedSources = recommendationSources.map(source => {
+        const result = results.find(r => 
+          r.results[0] && 
+          ('title' in r.results[0] ? source.type === 'movie' : source.type === 'tv')
+        );
+        
+        if (!result) return source;
+
+        return {
+          ...source,
+          currentPage: result.page,
+          hasMore: result.page < result.total_pages
+        };
+      });
+
+      setRecommendations(prev => [...prev, ...newRecommendations]);
+      setRecommendationSources(updatedSources);
+    } catch (error) {
+      console.error('Error loading more recommendations:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  useInfiniteScroll(loadMoreRecommendations, containerRef.current);
 
   const getFilteredAndSortedContent = (items: (Movie | TVShow)[]) => {
     let filtered = items.filter(item => 
-      item.contentType === selectedTab
+      'contentType' in item ? item.contentType === selectedTab : true
     );
 
     filtered = filtered.filter(item => item.vote_average >= minRating);
@@ -82,11 +167,14 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
     });
   };
 
-  const filteredContent = getFilteredAndSortedContent(favorites);
+  const filteredContent = getFilteredAndSortedContent(recommendations);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto relative">
+      <div 
+        ref={containerRef}
+        className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto relative"
+      >
         <button
           onClick={onClose}
           className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
@@ -94,7 +182,7 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
           <X size={20} />
         </button>
 
-        <h2 className="text-2xl font-bold mb-6">My Favorites</h2>
+        <h2 className="text-2xl font-bold mb-6">Similar to Your Favorites</h2>
 
         <FilterControls
           sortBy={sortBy}
@@ -132,21 +220,29 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
           <div className="text-center py-8">Loading...</div>
         ) : filteredContent.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            {`No ${selectedTab === 'movie' ? 'movies' : 'TV shows'} in your favorites yet.`}
+            {`No ${selectedTab === 'movie' ? 'movies' : 'TV shows'} found matching your criteria.`}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredContent.map((content) => (
-              <ContentCard
-                key={content.id}
-                content={content}
-                type={content.contentType as ContentType}
-                onSelect={() => {}}
-                isAuthenticated={true}
-                isFavorite={true}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredContent.map((content) => (
+                <ContentCard
+                  key={content.id}
+                  content={content}
+                  type={selectedTab}
+                  onSelect={() => {}}
+                  isAuthenticated={true}
+                  isFavorite={false}
+                />
+              ))}
+            </div>
+            
+            {loadingMore && (
+              <div className="text-center py-4">
+                Loading more...
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
