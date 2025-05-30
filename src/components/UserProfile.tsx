@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
-import { ContentCard } from './MovieCard';
+import { X, Star } from 'lucide-react';
 import { supabase } from '../supabase';
 import type { Movie, TVShow, Favorite } from '../types';
 
@@ -67,17 +66,43 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
             You haven't added any favorites yet.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {favorites.map((content) => (
-              <ContentCard
-                key={content.id}
-                content={content}
-                type={'name' in content ? 'tv' : 'movie'}
-                onSelect={() => {}}
-                isAuthenticated={true}
-                isFavorite={true}
-              />
-            ))}
+          <div className="space-y-4">
+            {favorites.map((content) => {
+              const type = 'name' in content ? 'tv' : 'movie';
+              const title = type === 'movie' ? (content as Movie).title : (content as TVShow).name;
+              const date = type === 'movie' 
+                ? (content as Movie).release_date 
+                : (content as TVShow).first_air_date;
+
+              return (
+                <div 
+                  key={content.id}
+                  className="flex bg-gray-50 rounded-lg overflow-hidden hover:bg-gray-100 transition-colors"
+                >
+                  <img
+                    src={`https://image.tmdb.org/t/p/w200${content.poster_path}`}
+                    alt={title}
+                    className="w-32 h-48 object-cover flex-shrink-0"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/200x300?text=No+Image';
+                    }}
+                  />
+                  <div className="p-4 flex-grow">
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-bold text-lg">{title}</h3>
+                      <span className="flex items-center text-yellow-500 bg-yellow-50 px-2 py-1 rounded">
+                        <Star size={16} className="fill-current" />
+                        <span className="ml-1">{content.vote_average.toFixed(1)}</span>
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {new Date(date).getFullYear()} • {type.toUpperCase()}
+                    </p>
+                    <p className="text-gray-600 mt-2 line-clamp-3">{content.overview}</p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
