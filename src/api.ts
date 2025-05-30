@@ -15,13 +15,13 @@ export async function searchContent(query: string, type: ContentType): Promise<M
   return data.results;
 }
 
-export async function getSimilarContent(id: number, type: ContentType, page: number = 1): Promise<SearchResponse> {
+export async function getSimilarContent(id: number, type: ContentType): Promise<Movie[] | TVShow[]> {
   const response = await fetch(
-    `${BASE_URL}/${type}/${id}/similar?page=${page}`,
+    `${BASE_URL}/${type}/${id}/similar`,
     { headers }
   );
   const data: SearchResponse = await response.json();
-  return data;
+  return data.results;
 }
 
 export async function getSearchSuggestions(query: string, type: ContentType): Promise<Movie[] | TVShow[]> {
@@ -36,9 +36,9 @@ export async function getSearchSuggestions(query: string, type: ContentType): Pr
 
 export async function getTrendingContent(type: ContentType): Promise<Movie[] | TVShow[]> {
   const response = await fetch(
-    `${BASE_URL}/trending/${type}/week`,
+    `${BASE_URL}/trending/${type}/day`,
     { headers }
   );
   const data: SearchResponse = await response.json();
-  return data.results.slice(0, 20);
+  return data.results;
 }
