@@ -5,7 +5,8 @@ import { ContentCard } from './components/MovieCard';
 import { AuthModal } from './components/AuthModal';
 import { UserDropdown } from './components/UserDropdown';
 import { FilterControls } from './components/FilterControls';
-import { searchContent, getSimilarContent, getSearchSuggestions } from './api';
+import { TrendingCarousel } from './components/TrendingCarousel';
+import { searchContent, getSimilarContent, getSearchSuggestions, getTrendingContent } from './api';
 import { supabase } from './supabase';
 import type { Movie, TVShow, ContentType, User as UserType, Favorite } from './types';
 
@@ -27,6 +28,24 @@ function App() {
   const [sortBy, setSortBy] = useState<'popularity' | 'date' | 'rating'>('popularity');
   const [minRating, setMinRating] = useState(0);
   const [yearFilter, setYearFilter] = useState<number | null>(null);
+  const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
+  const [trendingTVShows, setTrendingTVShows] = useState<TVShow[]>([]);
+
+  useEffect(() => {
+    async function fetchTrending() {
+      try {
+        const [movies, tvShows] = await Promise.all([
+          getTrendingContent('movie'),
+          getTrendingContent('tv')
+        ]);
+        setTrendingMovies(movies as Movie[]);
+        setTrendingTVShows(tvShows as TVShow[]);
+      } catch (err) {
+        console.error('Error fetching trending content:', err);
+      }
+    }
+    fetchTrending();
+  }, []);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -343,6 +362,27 @@ function App() {
                 )}
               </div>
             </form>
+
+            {!query && (
+              <div className="space-y-8 mb-8">
+                <TrendingCarousel
+                  items={trendingMovies}
+                  type="movie"
+                  onSelect={(item) => {
+                    setContentType('movie');
+                    handleContentSelect(item);
+                  }}
+                />
+                <TrendingCarousel
+                  items={trendingTVShows}
+                  type="tv"
+                  onSelect={(item) => {
+                    setContentType('tv');
+                    handleContentSelect(item);
+                  }}
+                />
+              </div>
+            )}
           </>
         )}
 
