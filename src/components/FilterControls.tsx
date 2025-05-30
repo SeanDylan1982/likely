@@ -1,9 +1,9 @@
 import React from 'react';
-import { SlidersHorizontal, TrendingUp, Calendar, Star } from 'lucide-react';
+import { SlidersHorizontal, TrendingUp, Calendar, Star, ArrowUpNarrowWide, ArrowDownNarrowWide } from 'lucide-react';
 
 interface FilterControlsProps {
-  sortBy: 'popularity' | 'date' | 'rating';
-  onSortChange: (sort: 'popularity' | 'date' | 'rating') => void;
+  sortBy: 'popularity' | 'date-asc' | 'date-desc' | 'rating';
+  onSortChange: (sort: 'popularity' | 'date-asc' | 'date-desc' | 'rating') => void;
   minRating: number;
   onMinRatingChange: (rating: number) => void;
   yearFilter: number | null;
@@ -29,7 +29,7 @@ export function FilterControls({
             <SlidersHorizontal size={16} />
             Sort By
           </label>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => onSortChange('popularity')}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm ${
@@ -42,15 +42,26 @@ export function FilterControls({
               Popularity
             </button>
             <button
-              onClick={() => onSortChange('date')}
+              onClick={() => onSortChange('date-desc')}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm ${
-                sortBy === 'date'
+                sortBy === 'date-desc'
                   ? 'bg-blue-500 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              <Calendar size={14} />
-              Date
+              <ArrowDownNarrowWide size={14} />
+              Newest First
+            </button>
+            <button
+              onClick={() => onSortChange('date-asc')}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm ${
+                sortBy === 'date-asc'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <ArrowUpNarrowWide size={14} />
+              Oldest First
             </button>
             <button
               onClick={() => onSortChange('rating')}

@@ -25,7 +25,7 @@ function App() {
   const [user, setUser] = useState<UserType | null>(null);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [recommendations, setRecommendations] = useState<(Movie | TVShow)[]>([]);
-  const [sortBy, setSortBy] = useState<'popularity' | 'date' | 'rating'>('popularity');
+  const [sortBy, setSortBy] = useState<'popularity' | 'date-asc' | 'date-desc' | 'rating'>('popularity');
   const [minRating, setMinRating] = useState(0);
   const [yearFilter, setYearFilter] = useState<number | null>(null);
   const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
@@ -127,10 +127,12 @@ function App() {
     return [...filtered].sort((a, b) => {
       if (sortBy === 'rating') {
         return b.vote_average - a.vote_average;
-      } else if (sortBy === 'date') {
+      } else if (sortBy === 'date-desc' || sortBy === 'date-asc') {
         const dateA = new Date('release_date' in a ? a.release_date : a.first_air_date);
         const dateB = new Date('release_date' in b ? b.release_date : b.first_air_date);
-        return dateB.getTime() - dateA.getTime();
+        return sortBy === 'date-desc' 
+          ? dateB.getTime() - dateA.getTime()
+          : dateA.getTime() - dateB.getTime();
       }
       // Default to popularity
       return b.popularity - a.popularity;
