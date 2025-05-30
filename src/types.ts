@@ -23,3 +23,16 @@ export interface SearchResponse {
 }
 
 export type ContentType = 'movie' | 'tv';
+
+export interface User {
+  id: string;
+  email: string;
+}
+
+export interface Favorite {
+  id: string;
+  user_id: string;
+  content_id: number;
+  content_type: ContentType;
+  created_at: string;
+}

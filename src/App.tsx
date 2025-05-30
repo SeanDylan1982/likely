@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { Search, X, Film, Tv } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, X, Film, Tv, LogOut, User } from 'lucide-react';
 import { useDebounce } from 'use-debounce';
 import { ContentCard } from './components/MovieCard';
+import { AuthModal } from './components/AuthModal';
 import { searchContent, getSimilarContent, getSearchSuggestions } from './api';
-import type { Movie, TVShow, ContentType } from './types';
+import { supabase } from './supabase';
+import type { Movie, TVShow, ContentType, User, Favorite } from './types';
 
 function App() {
   const [query, setQuery] = useState('');
@@ -13,11 +15,83 @@ function App() {
   const [suggestions, setSuggestions] = useState<(Movie | TVShow)[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [mode, setMode] = useState<'search' | 'similar'>('search');
+  const [mode, setMode] = useState<'search' | 'similar' | 'favorites'>('search');
   const [selectedContent, setSelectedContent] = useState<Movie | TVShow | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email!
+        });
+        fetchFavorites(session.user.id);
+      } else {
+        setUser(null);
+        setFavorites([]);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchFavorites = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('favorites')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error fetching favorites:', error);
+      return;
+    }
+
+    setFavorites(data);
+  };
+
+  const toggleFavorite = async (content: Movie | TVShow) => {
+    if (!user) return;
+
+    const contentId = content.id;
+    const existing = favorites.find(
+      f => f.content_id === contentId && f.content_type === contentType
+    );
+
+    if (existing) {
+      const { error } = await supabase
+        .from('favorites')
+        .delete()
+        .eq('id', existing.id);
+
+      if (!error) {
+        setFavorites(favorites.filter(f => f.id !== existing.id));
+      }
+    } else {
+      const { data, error } = await supabase
+        .from('favorites')
+        .insert({
+          user_id: user.id,
+          content_id: contentId,
+          content_type: contentType
+        })
+        .select()
+        .single();
+
+      if (!error && data) {
+        setFavorites([...favorites, data]);
+      }
+    }
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  useEffect(() => {
     const fetchSuggestions = async () => {
       if (!debouncedQuery.trim()) {
         setSuggestions([]);
@@ -77,7 +151,33 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold text-center mb-8">Entertainment Finder</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold">Entertainment Finder</h1>
+          <div className="flex items-center gap-4">
+            {user ? (
+              <div className="flex items-center gap-4">
+                <span className="flex items-center gap-2">
+                  <User size={20} />
+                  {user.email}
+                </span>
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                >
+                  <LogOut size={20} />
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+              >
+                Sign In
+              </button>
+            )}
+          </div>
+        </div>
         
         <div className="flex justify-center gap-4 mb-6">
           <button
@@ -189,6 +289,11 @@ function App() {
                 content={item}
                 type={contentType}
                 onSelect={handleContentSelect}
+                isAuthenticated={!!user}
+                isFavorite={favorites.some(
+                  f => f.content_id === item.id && f.content_type === contentType
+                )}
+                onToggleFavorite={() => toggleFavorite(item)}
               />
             ))}
           </div>
@@ -202,6 +307,11 @@ function App() {
           </div>
         )}
       </div>
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
     </div>
   );
 }
