@@ -116,11 +116,6 @@ function App() {
   const getFilteredAndSortedContent = (items: (Movie | TVShow)[]) => {
     let filtered = items;
 
-    filtered = filtered.map(item => ({
-      ...item,
-      vote_average: item.vote_average / 2
-    }));
-
     filtered = filtered.filter(item => item.vote_average >= minRating);
 
     if (yearFilter) {

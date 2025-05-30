@@ -59,11 +59,6 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
       item.contentType === selectedTab
     );
 
-    filtered = filtered.map(item => ({
-      ...item,
-      vote_average: item.vote_average / 2
-    }));
-
     filtered = filtered.filter(item => item.vote_average >= minRating);
 
     if (yearFilter) {
