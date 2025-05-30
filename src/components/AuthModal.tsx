@@ -12,6 +12,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -19,6 +20,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
 
     try {
@@ -28,14 +30,20 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
           password,
         });
         if (error) throw error;
+        setSuccess('Sign up successful! Please check your email for verification.');
+        // Keep the modal open for 3 seconds to show the success message
+        setTimeout(() => {
+          onClose();
+          setSuccess('');
+        }, 3000);
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
+        onClose();
       }
-      onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -60,6 +68,12 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            {success}
           </div>
         )}
 
@@ -101,7 +115,11 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
         <div className="mt-4 text-center">
           <button
-            onClick={() => setIsSignUp(!isSignUp)}
+            onClick={() => {
+              setIsSignUp(!isSignUp);
+              setError('');
+              setSuccess('');
+            }}
             className="text-blue-500 hover:text-blue-700"
           >
             {isSignUp
