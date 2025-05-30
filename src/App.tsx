@@ -5,7 +5,7 @@ import { ContentCard } from './components/MovieCard';
 import { AuthModal } from './components/AuthModal';
 import { searchContent, getSimilarContent, getSearchSuggestions } from './api';
 import { supabase } from './supabase';
-import type { Movie, TVShow, ContentType, User, Favorite } from './types';
+import type { Movie, TVShow, ContentType, User as UserType, Favorite } from './types';
 
 function App() {
   const [query, setQuery] = useState('');
@@ -19,7 +19,7 @@ function App() {
   const [selectedContent, setSelectedContent] = useState<Movie | TVShow | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserType | null>(null);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
 
   useEffect(() => {
