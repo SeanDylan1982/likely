@@ -9,16 +9,34 @@ interface TrendingCarouselProps {
 }
 
 export function TrendingCarousel({ items, type, onSelect }: TrendingCarouselProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
+    if (isHovered) return;
+
     const interval = setInterval(() => {
-      setCurrentIndex((current) => (current + 1) % items.length);
+      if (containerRef.current) {
+        const scrollAmount = containerRef.current.offsetWidth * 0.8;
+        const maxScroll = containerRef.current.scrollWidth - containerRef.current.offsetWidth;
+        const newScrollLeft = containerRef.current.scrollLeft + scrollAmount;
+
+        if (newScrollLeft >= maxScroll) {
+          containerRef.current.scrollTo({
+            left: 0,
+            behavior: 'smooth'
+          });
+        } else {
+          containerRef.current.scrollBy({
+            left: scrollAmount,
+            behavior: 'smooth'
+          });
+        }
+      }
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [items.length]);
+  }, [isHovered]);
 
   const scroll = (direction: 'left' | 'right') => {
     if (containerRef.current) {
@@ -31,7 +49,11 @@ export function TrendingCarousel({ items, type, onSelect }: TrendingCarouselProp
   };
 
   return (
-    <div className="relative group">
+    <div 
+      className="relative group"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       <h2 className="text-xl font-semibold mb-4">
         Trending {type === 'movie' ? 'Movies' : 'TV Shows'}
       </h2>
@@ -56,7 +78,7 @@ export function TrendingCarousel({ items, type, onSelect }: TrendingCarouselProp
           className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth"
           style={{ scrollSnapType: 'x mandatory' }}
         >
-          {items.map((item, index) => {
+          {items.map((item) => {
             const title = type === 'movie' ? (item as Movie).title : (item as TVShow).name;
             return (
               <div
