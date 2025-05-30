@@ -33,3 +33,12 @@ export async function getSearchSuggestions(query: string, type: ContentType): Pr
   const data: SearchResponse = await response.json();
   return data.results.slice(0, 5);
 }
+
+export async function getTrendingContent(type: ContentType): Promise<Movie[] | TVShow[]> {
+  const response = await fetch(
+    `${BASE_URL}/trending/${type}/week`,
+    { headers }
+  );
+  const data: SearchResponse = await response.json();
+  return data.results.slice(0, 20);
+}
