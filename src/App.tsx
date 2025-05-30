@@ -6,6 +6,7 @@ import { AuthModal } from './components/AuthModal';
 import { UserDropdown } from './components/UserDropdown';
 import { FilterControls } from './components/FilterControls';
 import { TrendingCarousel } from './components/TrendingCarousel';
+import { UserProfile } from './components/UserProfile';
 import { searchContent, getSimilarContent, getSearchSuggestions, getTrendingContent } from './api';
 import { supabase } from './supabase';
 import type { Movie, TVShow, ContentType, User as UserType, Favorite } from './types';
@@ -22,6 +23,7 @@ function App() {
   const [selectedContent, setSelectedContent] = useState<Movie | TVShow | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [user, setUser] = useState<UserType | null>(null);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [recommendations, setRecommendations] = useState<(Movie | TVShow)[]>([]);
@@ -254,7 +256,7 @@ function App() {
                 <UserDropdown
                   email={user.email}
                   onSignOut={handleSignOut}
-                  onProfileClick={() => {}}
+                  onProfileClick={() => setIsProfileOpen(true)}
                 />
               </div>
             ) : (
@@ -437,6 +439,13 @@ function App() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
       />
+
+      {user && isProfileOpen && (
+        <UserProfile
+          userId={user.id}
+          onClose={() => setIsProfileOpen(false)}
+        />
+      )}
     </div>
   );
 }
