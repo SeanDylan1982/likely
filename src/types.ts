@@ -65,3 +65,8 @@ export interface ContentDetails extends Movie, TVShow {
   budget?: number;
   revenue?: number;
 }
+
+export interface Genre {
+  id: number;
+  name: string;
+}

@@ -43,6 +43,33 @@ export async function getTrendingContent(type: ContentType): Promise<Movie[] | T
   return data.results;
 }
 
+export async function getTopRatedContent(type: ContentType): Promise<Movie[] | TVShow[]> {
+  const response = await fetch(
+    `${BASE_URL}/${type}/top_rated`,
+    { headers }
+  );
+  const data: SearchResponse = await response.json();
+  return data.results.slice(0, 20);
+}
+
+export async function getContentByGenre(type: ContentType, genreId: number): Promise<Movie[] | TVShow[]> {
+  const response = await fetch(
+    `${BASE_URL}/discover/${type}?with_genres=${genreId}&sort_by=popularity.desc`,
+    { headers }
+  );
+  const data: SearchResponse = await response.json();
+  return data.results;
+}
+
+export async function getGenres(type: ContentType): Promise<Genre[]> {
+  const response = await fetch(
+    `${BASE_URL}/genre/${type}/list`,
+    { headers }
+  );
+  const data: { genres: Genre[] } = await response.json();
+  return data.genres;
+}
+
 export async function getContentDetails(id: number, type: ContentType): Promise<ContentDetails> {
   const [details, credits] = await Promise.all([
     fetch(`${BASE_URL}/${type}/${id}`, { headers }).then(res => res.json()),
