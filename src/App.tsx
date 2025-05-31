@@ -47,3 +47,5 @@ const getFilteredAndSortedContent = (items: (Movie | TVShow)[]) => {
   selectedGenre={selectedGenre}
   onGenreChange={setSelectedGenre}
 />
+
+export default getFilteredAndSortedContent
