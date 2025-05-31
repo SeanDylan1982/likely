@@ -13,6 +13,17 @@ import { supabase } from './supabase';
 import type { Movie, TVShow, ContentType, User as UserType, Favorite, ContentDetails, Genre } from './types';
 
 function App() {
+  const [query, setQuery] = useState('');
+  const [debouncedQuery] = useDebounce(query, 300);
+  const [searchResults, setSearchResults] = useState<(Movie | TVShow)[]>([]);
+  const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
+  const [trendingTvShows, setTrendingTvShows] = useState<TVShow[]>([]);
+  const [selectedContent, setSelectedContent] = useState<ContentDetails | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [user, setUser] = useState<UserType | null>(null);
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState('popularity');
   const [minRating, setMinRating] = useState(0);
@@ -22,6 +33,22 @@ function App() {
   const [tvGenres, setTvGenres] = useState<Genre[]>([]);
   const [genreContent, setGenreContent] = useState<Record<number, (Movie | TVShow)[]>>({});
   const [topRatedContent, setTopRatedContent] = useState<(Movie | TVShow)[]>([]);
+
+  useEffect(() => {
+    const fetchTrending = async () => {
+      try {
+        const [movies, tvShows] = await Promise.all([
+          getTrendingContent('movie'),
+          getTrendingContent('tv')
+        ]);
+        setTrendingMovies(movies);
+        setTrendingTvShows(tvShows);
+      } catch (error) {
+        console.error('Error fetching trending content:', error);
+      }
+    };
+    fetchTrending();
+  }, []);
 
   useEffect(() => {
     async function fetchGenres() {
@@ -72,6 +99,34 @@ function App() {
       fetchTopRated();
     }
   }, [selectedTab, movieGenres, tvGenres]);
+
+  useEffect(() => {
+    if (debouncedQuery) {
+      const fetchResults = async () => {
+        try {
+          const results = await searchContent(debouncedQuery, selectedTab as ContentType);
+          setSearchResults(results);
+          const suggestions = await getSearchSuggestions(debouncedQuery);
+          setSearchSuggestions(suggestions);
+        } catch (error) {
+          console.error('Error searching content:', error);
+        }
+      };
+      fetchResults();
+    } else {
+      setSearchResults([]);
+      setSearchSuggestions([]);
+    }
+  }, [debouncedQuery, selectedTab]);
+
+  const handleContentSelect = async (content: Movie | TVShow) => {
+    try {
+      const details = await getContentDetails(content.id, selectedTab as ContentType);
+      setSelectedContent(details);
+    } catch (error) {
+      console.error('Error fetching content details:', error);
+    }
+  };
 
   const getFilteredAndSortedContent = (items: (Movie | TVShow)[]) => {
     let filtered = items;
