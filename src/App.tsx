@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Movie, TVShow } from './types';
+import { FilterControls } from './components/FilterControls';
 
 function App() {
   const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
