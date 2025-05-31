@@ -7,9 +7,10 @@ import { UserDropdown } from './components/UserDropdown';
 import { FilterControls } from './components/FilterControls';
 import { TrendingCarousel } from './components/TrendingCarousel';
 import { UserProfile } from './components/UserProfile';
-import { searchContent, getSimilarContent, getSearchSuggestions, getTrendingContent } from './api';
+import { ContentModal } from './components/ContentModal';
+import { searchContent, getSimilarContent, getSearchSuggestions, getTrendingContent, getContentDetails } from './api';
 import { supabase } from './supabase';
-import type { Movie, TVShow, ContentType, User as UserType, Favorite } from './types';
+import type { Movie, TVShow, ContentType, User as UserType, Favorite, ContentDetails } from './types';
 
 function App() {
   const [query, setQuery] = useState('');
@@ -34,6 +35,8 @@ function App() {
   const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
   const [trendingTVShows, setTrendingTVShows] = useState<TVShow[]>([]);
   const [selectedTab, setSelectedTab] = useState<ContentType>('movie');
+  const [selectedContentDetails, setSelectedContentDetails] = useState<ContentDetails | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     async function fetchTrending() {
@@ -216,12 +219,15 @@ function App() {
     setLoading(true);
     setError('');
     try {
+      const details = await getContentDetails(item.id, contentType);
+      setSelectedContentDetails(details);
+      setIsModalOpen(true);
       const similar = await getSimilarContent(item.id, contentType);
       setContent(similar);
       setSelectedContent(item);
       setMode('similar');
     } catch (err) {
-      setError(`Failed to fetch similar ${contentType === 'movie' ? 'movies' : 'TV shows'}. Please try again.`);
+      setError(`Failed to fetch ${contentType === 'movie' ? 'movie' : 'TV show'} details. Please try again.`);
     } finally {
       setLoading(false);
     }
@@ -513,6 +519,14 @@ function App() {
         <UserProfile
           userId={user.id}
           onClose={() => setIsProfileOpen(false)}
+        />
+      )}
+
+      {selectedContentDetails && isModalOpen && (
+        <ContentModal
+          content={selectedContentDetails}
+          type={contentType}
+          onClose={() => setIsModalOpen(false)}
         />
       )}
     </div>
