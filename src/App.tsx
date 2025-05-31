@@ -142,12 +142,12 @@ function App() {
     });
   };
 
-  const toggleFavorite = async (content: Movie | TVShow) => {
+  const toggleFavorite = async (content: Movie | TVShow, type: ContentType) => {
     if (!user) return;
 
     const contentId = content.id;
     const existing = favorites.find(
-      f => f.content_id === contentId && f.content_type === contentType
+      f => f.content_id === contentId && f.content_type === type
     );
 
     if (existing) {
@@ -157,7 +157,9 @@ function App() {
         .eq('id', existing.id);
 
       if (!error) {
-        setFavorites(favorites.filter(f => f.id !== existing.id));
+        const updatedFavorites = favorites.filter(f => f.id !== existing.id);
+        setFavorites(updatedFavorites);
+        fetchRecommendations(updatedFavorites);
       }
     } else {
       const { data, error } = await supabase
@@ -165,13 +167,15 @@ function App() {
         .insert({
           user_id: user.id,
           content_id: contentId,
-          content_type: contentType
+          content_type: type
         })
         .select()
         .single();
 
       if (!error && data) {
-        setFavorites([...favorites, data]);
+        const updatedFavorites = [...favorites, data];
+        setFavorites(updatedFavorites);
+        fetchRecommendations(updatedFavorites);
       }
     }
   };
@@ -323,7 +327,7 @@ function App() {
                       isFavorite={favorites.some(
                         f => f.content_id === movie.id && f.content_type === 'movie'
                       )}
-                      onToggleFavorite={() => toggleFavorite(movie)}
+                      onToggleFavorite={() => toggleFavorite(movie, 'movie')}
                     />
                   ))}
                 </div>
@@ -339,7 +343,7 @@ function App() {
                       isFavorite={favorites.some(
                         f => f.content_id === show.id && f.content_type === 'tv'
                       )}
-                      onToggleFavorite={() => toggleFavorite(show)}
+                      onToggleFavorite={() => toggleFavorite(show, 'tv')}
                     />
                   ))}
                 </div>
@@ -495,7 +499,7 @@ function App() {
                     isFavorite={favorites.some(
                       f => f.content_id === item.id && f.content_type === contentType
                     )}
-                    onToggleFavorite={() => toggleFavorite(item)}
+                    onToggleFavorite={() => toggleFavorite(item, contentType)}
                   />
                 ))}
               </div>
