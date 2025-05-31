@@ -27,8 +27,7 @@ function App() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [user, setUser] = useState<UserType | null>(null);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
-  const [movieRecommendations, setMovieRecommendations] = useState<Movie[]>([]);
-  const [tvRecommendations, setTvRecommendations] = useState<TVShow[]>([]);
+  const [recommendations, setRecommendations] = useState<(Movie | TVShow)[]>([]);
   const [sortBy, setSortBy] = useState<'popularity' | 'date-asc' | 'date-desc' | 'rating'>('popularity');
   const [minRating, setMinRating] = useState(3);
   const [yearFilter, setYearFilter] = useState<number | null>(null);
@@ -97,13 +96,40 @@ function App() {
       } else {
         setUser(null);
         setFavorites([]);
-        setMovieRecommendations([]);
-        setTvRecommendations([]);
+        setRecommendations([]);
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      if (!favorites.length) return;
+
+      const contentType = selectedTab;
+      const favoritesOfType = favorites.filter(f => f.content_type === contentType);
+      
+      const similarContentPromises = favoritesOfType.map(favorite => 
+        getSimilarContent(favorite.content_id, contentType)
+      );
+
+      try {
+        const results = await Promise.all(similarContentPromises);
+        const allSimilarContent = results.flat();
+        
+        const uniqueContent = Array.from(
+          new Map(allSimilarContent.map(item => [item.id, item])).values()
+        );
+
+        setRecommendations(uniqueContent);
+      } catch (error) {
+        console.error('Error fetching recommendations:', error);
+      }
+    };
+
+    fetchRecommendations();
+  }, [favorites, selectedTab]);
 
   const fetchFavorites = async (userId: string) => {
     const { data, error } = await supabase
@@ -117,35 +143,6 @@ function App() {
     }
 
     setFavorites(data);
-    fetchRecommendations(data);
-  };
-
-  const fetchRecommendations = async (favorites: Favorite[]) => {
-    setLoading(true);
-    try {
-      const movieFavorites = favorites.filter(f => f.content_type === 'movie');
-      const tvFavorites = favorites.filter(f => f.content_type === 'tv');
-
-      const [movieResults, tvResults] = await Promise.all([
-        Promise.all(movieFavorites.map(f => getSimilarContent(f.content_id, 'movie'))),
-        Promise.all(tvFavorites.map(f => getSimilarContent(f.content_id, 'tv')))
-      ]);
-
-      const uniqueMovies = Array.from(
-        new Map(movieResults.flat().map(item => [item.id, item])).values()
-      ) as Movie[];
-      
-      const uniqueTVShows = Array.from(
-        new Map(tvResults.flat().map(item => [item.id, item])).values()
-      ) as TVShow[];
-
-      setMovieRecommendations(uniqueMovies);
-      setTvRecommendations(uniqueTVShows);
-    } catch (err) {
-      console.error('Error fetching recommendations:', err);
-    } finally {
-      setLoading(false);
-    }
   };
 
   const toggleFavorite = async (content: Movie | TVShow) => {
@@ -310,7 +307,7 @@ function App() {
           </div>
         </div>
 
-        {mode === 'recommendations' ? (
+        {mode === 'recommendations' && (
           <>
             <FilterControls
               sortBy={sortBy}
@@ -319,95 +316,33 @@ function App() {
               onMinRatingChange={setMinRating}
               yearFilter={yearFilter}
               onYearFilterChange={setYearFilter}
-              genres={contentType === 'movie' ? movieGenres : tvGenres}
-              selectedGenre={selectedGenre}
-              onGenreChange={setSelectedGenre}
             />
 
-            <div className="flex justify-center gap-4 mb-6">
-              <button
-                onClick={() => {
-                  setContentType('movie');
-                  setSelectedGenre(null);
-                }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                  contentType === 'movie'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <Film size={20} />
-                Movies
-              </button>
-              <button
-                onClick={() => {
-                  setContentType('tv');
-                  setSelectedGenre(null);
-                }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                  contentType === 'tv'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <Tv size={20} />
-                TV Shows
-              </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {getFilteredAndSortedContent(recommendations).map((item) => (
+                <ContentCard
+                  key={item.id}
+                  content={item}
+                  type={contentType}
+                  onSelect={handleContentSelect}
+                  isAuthenticated={!!user}
+                  isFavorite={favorites.some(
+                    f => f.content_id === item.id && f.content_type === contentType
+                  )}
+                  onToggleFavorite={() => toggleFavorite(item)}
+                />
+              ))}
             </div>
 
-            <div className="space-y-8">
-              {contentType === 'movie' ? (
-                <>
-                  <TrendingCarousel
-                    items={trendingMovies}
-                    type="movie"
-                    title="Trending Movies"
-                    onSelect={(item) => handleContentSelect(item)}
-                  />
-                  <TrendingCarousel
-                    items={topRatedMovies}
-                    type="movie"
-                    title="Top 20 Movies of All Time"
-                    onSelect={(item) => handleContentSelect(item)}
-                  />
-                  {movieGenres.map(genre => (
-                    <TrendingCarousel
-                      key={genre.id}
-                      items={genreContent[genre.id] || []}
-                      type="movie"
-                      title={`Top ${genre.name} Movies`}
-                      onSelect={(item) => handleContentSelect(item)}
-                    />
-                  ))}
-                </>
-              ) : (
-                <>
-                  <TrendingCarousel
-                    items={trendingTVShows}
-                    type="tv"
-                    title="Trending TV Shows"
-                    onSelect={(item) => handleContentSelect(item)}
-                  />
-                  <TrendingCarousel
-                    items={topRatedTVShows}
-                    type="tv"
-                    title="Top 20 TV Shows of All Time"
-                    onSelect={(item) => handleContentSelect(item)}
-                  />
-                  {tvGenres.map(genre => (
-                    <TrendingCarousel
-                      key={genre.id}
-                      items={genreContent[genre.id] || []}
-                      type="tv"
-                      title={`Top ${genre.name} TV Shows`}
-                      onSelect={(item) => handleContentSelect(item)}
-                    />
-                  ))}
-                </>
-              )}
-            </div>
+            {recommendations.length === 0 && (
+              <div className="text-center text-gray-500 mt-8">
+                No recommendations yet. Try adding some {contentType === 'movie' ? 'movies' : 'TV shows'} to your favorites!
+              </div>
+            )}
           </>
-        ) : (
+        )}
+
+        {mode !== 'recommendations' && (
           <>
             <div className="flex justify-center gap-4 mb-6">
               <button
