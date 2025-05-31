@@ -41,10 +41,10 @@ function App() {
 
   useEffect(() => {
     async function fetchContentForGenres() {
-      const genres = contentType === 'movie' ? movieGenres : tvGenres;
+      const genres = selectedTab === 'movie' ? movieGenres : tvGenres;
       try {
         const contentPromises = genres.map(genre =>
-          getContentByGenre(contentType, genre.id)
+          getContentByGenre(selectedTab as ContentType, genre.id)
         );
         const contents = await Promise.all(contentPromises);
         const contentByGenre: Record<number, (Movie | TVShow)[]> = {};
@@ -59,19 +59,19 @@ function App() {
 
     async function fetchTopRated() {
       try {
-        const content = await getTopRatedContent(contentType);
+        const content = await getTopRatedContent(selectedTab as ContentType);
         setTopRatedContent(content);
       } catch (err) {
         console.error('Error fetching top rated content:', err);
       }
     }
 
-    if ((contentType === 'movie' && movieGenres.length > 0) ||
-        (contentType === 'tv' && tvGenres.length > 0)) {
+    if ((selectedTab === 'movie' && movieGenres.length > 0) ||
+        (selectedTab === 'tv' && tvGenres.length > 0)) {
       fetchContentForGenres();
       fetchTopRated();
     }
-  }, [contentType, movieGenres, tvGenres]);
+  }, [selectedTab, movieGenres, tvGenres]);
 
   const getFilteredAndSortedContent = (items: (Movie | TVShow)[]) => {
     let filtered = items;
@@ -115,25 +115,25 @@ function App() {
             type="movie"
             title="Trending Movies"
             onSelect={(item) => {
-              setContentType('movie');
+              setSelectedTab('movie');
               handleContentSelect(item);
             }}
           />
           
           <TrendingCarousel
             items={topRatedContent}
-            type={contentType}
-            title={`Top 20 ${contentType === 'movie' ? 'Movies' : 'TV Shows'} of All Time`}
+            type={selectedTab as ContentType}
+            title={`Top 20 ${selectedTab === 'movie' ? 'Movies' : 'TV Shows'} of All Time`}
             onSelect={handleContentSelect}
           />
 
-          {(contentType === 'movie' ? movieGenres : tvGenres).map(genre => (
+          {(selectedTab === 'movie' ? movieGenres : tvGenres).map(genre => (
             genreContent[genre.id] && (
               <TrendingCarousel
                 key={genre.id}
                 items={genreContent[genre.id]}
-                type={contentType}
-                title={`${genre.name} ${contentType === 'movie' ? 'Movies' : 'TV Shows'}`}
+                type={selectedTab as ContentType}
+                title={`${genre.name} ${selectedTab === 'movie' ? 'Movies' : 'TV Shows'}`}
                 onSelect={handleContentSelect}
               />
             )
@@ -148,7 +148,7 @@ function App() {
         onMinRatingChange={setMinRating}
         yearFilter={yearFilter}
         onYearFilterChange={setYearFilter}
-        genres={contentType === 'movie' ? movieGenres : tvGenres}
+        genres={selectedTab === 'movie' ? movieGenres : tvGenres}
         selectedGenre={selectedGenre}
         onGenreChange={setSelectedGenre}
       />
