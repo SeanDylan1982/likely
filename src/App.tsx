@@ -1,6 +1,16 @@
-import React, { useState } from 'react';
-import { Movie, TVShow } from './types';
+import React, { useState, useEffect } from 'react';
+import { Search, X, Film, Tv, Sparkles } from 'lucide-react';
+import { useDebounce } from 'use-debounce';
+import { ContentCard } from './components/MovieCard';
+import { AuthModal } from './components/AuthModal';
+import { UserDropdown } from './components/UserDropdown';
 import { FilterControls } from './components/FilterControls';
+import { TrendingCarousel } from './components/TrendingCarousel';
+import { UserProfile } from './components/UserProfile';
+import { ContentModal } from './components/ContentModal';
+import { searchContent, getSimilarContent, getSearchSuggestions, getTrendingContent, getContentDetails, getTopRatedContent, getContentByGenre, getGenres } from './api';
+import { supabase } from './supabase';
+import type { Movie, TVShow, ContentType, User as UserType, Favorite, ContentDetails, Genre } from './types';
 
 function App() {
   const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
@@ -8,6 +18,60 @@ function App() {
   const [minRating, setMinRating] = useState(0);
   const [yearFilter, setYearFilter] = useState<number | null>(null);
   const [selectedTab, setSelectedTab] = useState('movie');
+  const [movieGenres, setMovieGenres] = useState<Genre[]>([]);
+  const [tvGenres, setTvGenres] = useState<Genre[]>([]);
+  const [genreContent, setGenreContent] = useState<Record<number, (Movie | TVShow)[]>>({});
+  const [topRatedContent, setTopRatedContent] = useState<(Movie | TVShow)[]>([]);
+
+  useEffect(() => {
+    async function fetchGenres() {
+      try {
+        const [movieGenresData, tvGenresData] = await Promise.all([
+          getGenres('movie'),
+          getGenres('tv')
+        ]);
+        setMovieGenres(movieGenresData);
+        setTvGenres(tvGenresData);
+      } catch (err) {
+        console.error('Error fetching genres:', err);
+      }
+    }
+    fetchGenres();
+  }, []);
+
+  useEffect(() => {
+    async function fetchContentForGenres() {
+      const genres = contentType === 'movie' ? movieGenres : tvGenres;
+      try {
+        const contentPromises = genres.map(genre =>
+          getContentByGenre(contentType, genre.id)
+        );
+        const contents = await Promise.all(contentPromises);
+        const contentByGenre: Record<number, (Movie | TVShow)[]> = {};
+        genres.forEach((genre, index) => {
+          contentByGenre[genre.id] = contents[index];
+        });
+        setGenreContent(contentByGenre);
+      } catch (err) {
+        console.error('Error fetching genre content:', err);
+      }
+    }
+
+    async function fetchTopRated() {
+      try {
+        const content = await getTopRatedContent(contentType);
+        setTopRatedContent(content);
+      } catch (err) {
+        console.error('Error fetching top rated content:', err);
+      }
+    }
+
+    if ((contentType === 'movie' && movieGenres.length > 0) ||
+        (contentType === 'tv' && tvGenres.length > 0)) {
+      fetchContentForGenres();
+      fetchTopRated();
+    }
+  }, [contentType, movieGenres, tvGenres]);
 
   const getFilteredAndSortedContent = (items: (Movie | TVShow)[]) => {
     let filtered = items;
@@ -43,7 +107,40 @@ function App() {
   };
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-100 p-8">
+      {!query && (
+        <div className="space-y-8 mb-8">
+          <TrendingCarousel
+            items={trendingMovies}
+            type="movie"
+            title="Trending Movies"
+            onSelect={(item) => {
+              setContentType('movie');
+              handleContentSelect(item);
+            }}
+          />
+          
+          <TrendingCarousel
+            items={topRatedContent}
+            type={contentType}
+            title={`Top 20 ${contentType === 'movie' ? 'Movies' : 'TV Shows'} of All Time`}
+            onSelect={handleContentSelect}
+          />
+
+          {(contentType === 'movie' ? movieGenres : tvGenres).map(genre => (
+            genreContent[genre.id] && (
+              <TrendingCarousel
+                key={genre.id}
+                items={genreContent[genre.id]}
+                type={contentType}
+                title={`${genre.name} ${contentType === 'movie' ? 'Movies' : 'TV Shows'}`}
+                onSelect={handleContentSelect}
+              />
+            )
+          ))}
+        </div>
+      )}
+      
       <FilterControls
         sortBy={sortBy}
         onSortChange={setSortBy}
@@ -51,7 +148,7 @@ function App() {
         onMinRatingChange={setMinRating}
         yearFilter={yearFilter}
         onYearFilterChange={setYearFilter}
-        genres={selectedTab === 'movie' ? movieGenres : tvGenres}
+        genres={contentType === 'movie' ? movieGenres : tvGenres}
         selectedGenre={selectedGenre}
         onGenreChange={setSelectedGenre}
       />
