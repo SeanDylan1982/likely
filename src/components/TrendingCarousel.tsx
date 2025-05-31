@@ -6,9 +6,10 @@ interface TrendingCarouselProps {
   items: (Movie | TVShow)[];
   type: ContentType;
   onSelect: (item: Movie | TVShow) => void;
+  title: string;
 }
 
-export function TrendingCarousel({ items, type, onSelect }: TrendingCarouselProps) {
+export function TrendingCarousel({ items, type, onSelect, title }: TrendingCarouselProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -54,9 +55,7 @@ export function TrendingCarousel({ items, type, onSelect }: TrendingCarouselProp
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <h2 className="text-xl font-semibold mb-4">
-        Trending {type === 'movie' ? 'Movies' : 'TV Shows'}
-      </h2>
+      <h2 className="text-xl font-semibold mb-4">{title}</h2>
       
       <div className="relative overflow-hidden">
         <button

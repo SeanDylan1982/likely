@@ -8,9 +8,18 @@ import { FilterControls } from './components/FilterControls';
 import { TrendingCarousel } from './components/TrendingCarousel';
 import { UserProfile } from './components/UserProfile';
 import { ContentModal } from './components/ContentModal';
-import { searchContent, getSimilarContent, getSearchSuggestions, getTrendingContent, getContentDetails } from './api';
+import { 
+  searchContent, 
+  getSimilarContent, 
+  getSearchSuggestions, 
+  getTrendingContent, 
+  getContentDetails,
+  getTopRatedContent,
+  getContentByGenre,
+  getGenres
+} from './api';
 import { supabase } from './supabase';
-import type { Movie, TVShow, ContentType, User as UserType, Favorite, ContentDetails } from './types';
+import type { Movie, TVShow, ContentType, User as UserType, Favorite, ContentDetails, Genre } from './types';
 
 function App() {
   const [query, setQuery] = useState('');
@@ -37,21 +46,59 @@ function App() {
   const [selectedTab, setSelectedTab] = useState<ContentType>('movie');
   const [selectedContentDetails, setSelectedContentDetails] = useState<ContentDetails | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [topRatedMovies, setTopRatedMovies] = useState<Movie[]>([]);
+  const [topRatedTVShows, setTopRatedTVShows] = useState<TVShow[]>([]);
+  const [movieGenres, setMovieGenres] = useState<Genre[]>([]);
+  const [tvGenres, setTvGenres] = useState<Genre[]>([]);
+  const [genreContent, setGenreContent] = useState<Record<number, Movie[] | TVShow[]>>({});
 
   useEffect(() => {
-    async function fetchTrending() {
+    async function fetchInitialContent() {
       try {
-        const [movies, tvShows] = await Promise.all([
+        const [
+          trendingMovies,
+          trendingTVShows,
+          topMovies,
+          topTVShows,
+          movieGenreList,
+          tvGenreList
+        ] = await Promise.all([
           getTrendingContent('movie'),
-          getTrendingContent('tv')
+          getTrendingContent('tv'),
+          getTopRatedContent('movie'),
+          getTopRatedContent('tv'),
+          getGenres('movie'),
+          getGenres('tv')
         ]);
-        setTrendingMovies(movies as Movie[]);
-        setTrendingTVShows(tvShows as TVShow[]);
+
+        setTrendingMovies(trendingMovies as Movie[]);
+        setTrendingTVShows(trendingTVShows as TVShow[]);
+        setTopRatedMovies(topMovies as Movie[]);
+        setTopRatedTVShows(topTVShows as TVShow[]);
+        setMovieGenres(movieGenreList);
+        setTvGenres(tvGenreList);
+
+        // Fetch content for each genre
+        const genreContentMap: Record<number, Movie[] | TVShow[]> = {};
+        
+        await Promise.all([
+          ...movieGenreList.map(async (genre) => {
+            const content = await getContentByGenre('movie', genre.id);
+            genreContentMap[genre.id] = content;
+          }),
+          ...tvGenreList.map(async (genre) => {
+            const content = await getContentByGenre('tv', genre.id);
+            genreContentMap[genre.id] = content;
+          })
+        ]);
+
+        setGenreContent(genreContentMap);
       } catch (err) {
-        console.error('Error fetching trending content:', err);
+        console.error('Error fetching initial content:', err);
       }
     }
-    fetchTrending();
+
+    fetchInitialContent();
   }, []);
 
   useEffect(() => {
@@ -452,22 +499,55 @@ function App() {
 
             {!query && (
               <div className="space-y-8 mb-8">
-                <TrendingCarousel
-                  items={trendingMovies}
-                  type="movie"
-                  onSelect={(item) => {
-                    setContentType('movie');
-                    handleContentSelect(item, 'movie');
-                  }}
-                />
-                <TrendingCarousel
-                  items={trendingTVShows}
-                  type="tv"
-                  onSelect={(item) => {
-                    setContentType('tv');
-                    handleContentSelect(item, 'tv');
-                  }}
-                />
+                {contentType === 'movie' ? (
+                  <>
+                    <TrendingCarousel
+                      title="Trending Movies"
+                      items={trendingMovies}
+                      type="movie"
+                      onSelect={(item) => handleContentSelect(item, 'movie')}
+                    />
+                    <TrendingCarousel
+                      title="Top Rated Movies"
+                      items={topRatedMovies}
+                      type="movie"
+                      onSelect={(item) => handleContentSelect(item, 'movie')}
+                    />
+                    {movieGenres.map((genre) => (
+                      <TrendingCarousel
+                        key={genre.id}
+                        title={`${genre.name} Movies`}
+                        items={genreContent[genre.id] || []}
+                        type="movie"
+                        onSelect={(item) => handleContentSelect(item, 'movie')}
+                      />
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    <TrendingCarousel
+                      title="Trending TV Shows"
+                      items={trendingTVShows}
+                      type="tv"
+                      onSelect={(item) => handleContentSelect(item, 'tv')}
+                    />
+                    <TrendingCarousel
+                      title="Top Rated TV Shows"
+                      items={topRatedTVShows}
+                      type="tv"
+                      onSelect={(item) => handleContentSelect(item, 'tv')}
+                    />
+                    {tvGenres.map((genre) => (
+                      <TrendingCarousel
+                        key={genre.id}
+                        title={`${genre.name} TV Shows`}
+                        items={genreContent[genre.id] || []}
+                        type="tv"
+                        onSelect={(item) => handleContentSelect(item, 'tv')}
+                      />
+                    ))}
+                  </>
+                )}
               </div>
             )}
 
@@ -540,4 +620,4 @@ function App() {
   );
 }
 
-export default App
+export default App;
