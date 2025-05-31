@@ -183,3 +183,5 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
     </div>
   );
 }
+
+export { UserProfile }
