@@ -8,9 +8,10 @@ import type { Movie, TVShow, ContentType } from '../types';
 interface UserProfileProps {
   userId: string;
   onClose: () => void;
+  onSelectContent: (content: Movie | TVShow, type: ContentType) => void;
 }
 
-export function UserProfile({ userId, onClose }: UserProfileProps) {
+export function UserProfile({ userId, onClose, onSelectContent }: UserProfileProps) {
   const [favorites, setFavorites] = useState<(Movie | TVShow)[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState<ContentType>('movie');
@@ -143,7 +144,7 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
                 key={content.id}
                 content={content}
                 type={selectedTab}
-                onSelect={() => {}}
+                onSelect={() => onSelectContent(content, selectedTab)}
                 isAuthenticated={true}
                 isFavorite={true}
               />

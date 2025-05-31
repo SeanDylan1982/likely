@@ -215,19 +215,21 @@ function App() {
     }
   };
 
-  const handleContentSelect = async (item: Movie | TVShow) => {
+  const handleContentSelect = async (item: Movie | TVShow, type: ContentType) => {
     setLoading(true);
     setError('');
     try {
-      const details = await getContentDetails(item.id, contentType);
+      const details = await getContentDetails(item.id, type);
       setSelectedContentDetails(details);
       setIsModalOpen(true);
-      const similar = await getSimilarContent(item.id, contentType);
-      setContent(similar);
-      setSelectedContent(item);
-      setMode('similar');
+      if (mode !== 'recommendations') {
+        const similar = await getSimilarContent(item.id, type);
+        setContent(similar);
+        setSelectedContent(item);
+        setMode('similar');
+      }
     } catch (err) {
-      setError(`Failed to fetch ${contentType === 'movie' ? 'movie' : 'TV show'} details. Please try again.`);
+      setError(`Failed to fetch ${type === 'movie' ? 'movie' : 'TV show'} details. Please try again.`);
     } finally {
       setLoading(false);
     }
@@ -237,7 +239,7 @@ function App() {
     setQuery(contentType === 'movie' ? (item as Movie).title : (item as TVShow).name);
     setSuggestions([]);
     setShowSuggestions(false);
-    handleContentSelect(item);
+    handleContentSelect(item, contentType);
   };
 
   return (
@@ -316,7 +318,7 @@ function App() {
                       key={movie.id}
                       content={movie}
                       type="movie"
-                      onSelect={handleContentSelect}
+                      onSelect={() => handleContentSelect(movie, 'movie')}
                       isAuthenticated={!!user}
                       isFavorite={favorites.some(
                         f => f.content_id === movie.id && f.content_type === 'movie'
@@ -332,7 +334,7 @@ function App() {
                       key={show.id}
                       content={show}
                       type="tv"
-                      onSelect={handleContentSelect}
+                      onSelect={() => handleContentSelect(show, 'tv')}
                       isAuthenticated={!!user}
                       isFavorite={favorites.some(
                         f => f.content_id === show.id && f.content_type === 'tv'
@@ -451,7 +453,7 @@ function App() {
                   type="movie"
                   onSelect={(item) => {
                     setContentType('movie');
-                    handleContentSelect(item);
+                    handleContentSelect(item, 'movie');
                   }}
                 />
                 <TrendingCarousel
@@ -459,7 +461,7 @@ function App() {
                   type="tv"
                   onSelect={(item) => {
                     setContentType('tv');
-                    handleContentSelect(item);
+                    handleContentSelect(item, 'tv');
                   }}
                 />
               </div>
@@ -488,7 +490,7 @@ function App() {
                     key={item.id}
                     content={item}
                     type={contentType}
-                    onSelect={handleContentSelect}
+                    onSelect={() => handleContentSelect(item, contentType)}
                     isAuthenticated={!!user}
                     isFavorite={favorites.some(
                       f => f.content_id === item.id && f.content_type === contentType
@@ -519,6 +521,7 @@ function App() {
         <UserProfile
           userId={user.id}
           onClose={() => setIsProfileOpen(false)}
+          onSelectContent={handleContentSelect}
         />
       )}
 
@@ -532,5 +535,3 @@ function App() {
     </div>
   );
 }
-
-export default App;
