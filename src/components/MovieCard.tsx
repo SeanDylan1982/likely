@@ -25,19 +25,24 @@ export function ContentCard({
     : (content as TVShow).first_air_date;
 
   return (
-    <div className="bg-white rounded-lg shadow-lg overflow-hidden relative">
+    <div className="bg-white rounded-lg shadow-lg overflow-hidden relative group">
       <div 
         className="cursor-pointer transform transition hover:scale-105"
         onClick={() => onSelect(content)}
       >
-        <img
-          src={`https://image.tmdb.org/t/p/w500${content.poster_path}`}
-          alt={title}
-          className="w-full h-64 object-cover"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/500x750?text=No+Image';
-          }}
-        />
+        <div className="relative">
+          <img
+            src={`https://image.tmdb.org/t/p/w500${content.poster_path}`}
+            alt={title}
+            className="w-full h-64 object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/500x750?text=No+Image';
+            }}
+          />
+          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <span className="text-white font-medium">View Details</span>
+          </div>
+        </div>
         <div className="p-4">
           <h3 className="font-bold text-lg mb-2 line-clamp-1">{title}</h3>
           <p className="text-gray-600 text-sm mb-2 line-clamp-2">{content.overview}</p>
@@ -55,7 +60,10 @@ export function ContentCard({
       
       {isAuthenticated && onToggleFavorite && (
         <button
-          onClick={onToggleFavorite}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleFavorite();
+          }}
           className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:bg-gray-100"
         >
           <Heart

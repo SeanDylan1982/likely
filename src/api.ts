@@ -42,3 +42,15 @@ export async function getTrendingContent(type: ContentType): Promise<Movie[] | T
   const data: SearchResponse = await response.json();
   return data.results;
 }
+
+export async function getContentDetails(id: number, type: ContentType): Promise<ContentDetails> {
+  const [details, credits] = await Promise.all([
+    fetch(`${BASE_URL}/${type}/${id}`, { headers }).then(res => res.json()),
+    fetch(`${BASE_URL}/${type}/${id}/credits`, { headers }).then(res => res.json())
+  ]);
+
+  return {
+    ...details,
+    credits
+  };
+}
