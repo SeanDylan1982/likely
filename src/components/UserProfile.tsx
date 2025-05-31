@@ -3,6 +3,7 @@ import { X, Film, Tv } from 'lucide-react';
 import { FilterControls } from './FilterControls';
 import { ContentCard } from './MovieCard';
 import { supabase } from '../supabase';
+import { getContentDetails } from '../api';
 import type { Movie, TVShow, ContentType, Favorite } from '../types';
 
 interface UserProfileProps {
@@ -36,10 +37,7 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
 
       if (favoritesData) {
         const contentPromises = favoritesData.map(async (favorite) => {
-          const response = await fetch(
-            `https://api.themoviedb.org/3/${favorite.content_type}/${favorite.content_id}?api_key=${import.meta.env.VITE_TMDB_API_KEY}`
-          );
-          const content = await response.json();
+          const content = await getContentDetails(favorite.content_id, favorite.content_type);
           return {
             ...content,
             contentType: favorite.content_type
@@ -72,8 +70,8 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
 
     if (selectedGenre) {
       filtered = filtered.filter(item => {
-        const genres = 'genre_ids' in item ? item.genre_ids : [];
-        return genres.includes(selectedGenre);
+        const genres = item.genres || [];
+        return genres.some(genre => genre.id === selectedGenre);
       });
     }
 
