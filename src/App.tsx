@@ -32,6 +32,7 @@ function App() {
   const [sortBy, setSortBy] = useState<'popularity' | 'date-asc' | 'date-desc' | 'rating'>('popularity');
   const [minRating, setMinRating] = useState(3);
   const [yearFilter, setYearFilter] = useState<number | null>(null);
+  const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
   const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
   const [trendingTVShows, setTrendingTVShows] = useState<TVShow[]>([]);
   const [topRatedMovies, setTopRatedMovies] = useState<Movie[]>([]);
@@ -257,6 +258,12 @@ function App() {
       });
     }
 
+    if (selectedGenre) {
+      filtered = filtered.filter(item => {
+        return item.genre_ids.includes(selectedGenre);
+      });
+    }
+
     return [...filtered].sort((a, b) => {
       if (sortBy === 'rating') {
         return b.vote_average - a.vote_average;
@@ -312,11 +319,17 @@ function App() {
               onMinRatingChange={setMinRating}
               yearFilter={yearFilter}
               onYearFilterChange={setYearFilter}
+              genres={contentType === 'movie' ? movieGenres : tvGenres}
+              selectedGenre={selectedGenre}
+              onGenreChange={setSelectedGenre}
             />
 
             <div className="flex justify-center gap-4 mb-6">
               <button
-                onClick={() => setContentType('movie')}
+                onClick={() => {
+                  setContentType('movie');
+                  setSelectedGenre(null);
+                }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
                   contentType === 'movie'
                     ? 'bg-blue-500 text-white'
@@ -327,7 +340,10 @@ function App() {
                 Movies
               </button>
               <button
-                onClick={() => setContentType('tv')}
+                onClick={() => {
+                  setContentType('tv');
+                  setSelectedGenre(null);
+                }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
                   contentType === 'tv'
                     ? 'bg-blue-500 text-white'
