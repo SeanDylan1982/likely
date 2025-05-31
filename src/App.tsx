@@ -8,9 +8,9 @@ import { FilterControls } from './components/FilterControls';
 import { TrendingCarousel } from './components/TrendingCarousel';
 import { UserProfile } from './components/UserProfile';
 import { ContentModal } from './components/ContentModal';
-import { searchContent, getSimilarContent, getSearchSuggestions, getTrendingContent, getContentDetails } from './api';
+import { searchContent, getSimilarContent, getSearchSuggestions, getTrendingContent, getContentDetails, getTopRatedContent, getContentByGenre, getGenres } from './api';
 import { supabase } from './supabase';
-import type { Movie, TVShow, ContentType, User as UserType, Favorite, ContentDetails } from './types';
+import type { Movie, TVShow, ContentType, User as UserType, Favorite, ContentDetails, Genre } from './types';
 
 function App() {
   const [query, setQuery] = useState('');
@@ -34,24 +34,55 @@ function App() {
   const [yearFilter, setYearFilter] = useState<number | null>(null);
   const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
   const [trendingTVShows, setTrendingTVShows] = useState<TVShow[]>([]);
-  const [selectedTab, setSelectedTab] = useState<ContentType>('movie');
+  const [topRatedMovies, setTopRatedMovies] = useState<Movie[]>([]);
+  const [topRatedTVShows, setTopRatedTVShows] = useState<TVShow[]>([]);
+  const [movieGenres, setMovieGenres] = useState<Genre[]>([]);
+  const [tvGenres, setTvGenres] = useState<Genre[]>([]);
+  const [genreContent, setGenreContent] = useState<Record<number, Movie[] | TVShow[]>>({});
   const [selectedContentDetails, setSelectedContentDetails] = useState<ContentDetails | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    async function fetchTrending() {
+    async function fetchInitialData() {
       try {
-        const [movies, tvShows] = await Promise.all([
+        const [movies, tvShows, topMovies, topTVShows, movieGenreList, tvGenreList] = await Promise.all([
           getTrendingContent('movie'),
-          getTrendingContent('tv')
+          getTrendingContent('tv'),
+          getTopRatedContent('movie'),
+          getTopRatedContent('tv'),
+          getGenres('movie'),
+          getGenres('tv')
         ]);
+
         setTrendingMovies(movies as Movie[]);
         setTrendingTVShows(tvShows as TVShow[]);
+        setTopRatedMovies(topMovies as Movie[]);
+        setTopRatedTVShows(topTVShows as TVShow[]);
+        setMovieGenres(movieGenreList);
+        setTvGenres(tvGenreList);
+
+        const movieGenreContentPromises = movieGenreList.map(genre => 
+          getContentByGenre('movie', genre.id).then(content => [genre.id, content])
+        );
+        const tvGenreContentPromises = tvGenreList.map(genre => 
+          getContentByGenre('tv', genre.id).then(content => [genre.id, content])
+        );
+
+        const movieGenreResults = await Promise.all(movieGenreContentPromises);
+        const tvGenreResults = await Promise.all(tvGenreContentPromises);
+
+        const allGenreContent: Record<number, Movie[] | TVShow[]> = {};
+        [...movieGenreResults, ...tvGenreResults].forEach(([genreId, content]) => {
+          allGenreContent[genreId as number] = content;
+        });
+
+        setGenreContent(allGenreContent);
       } catch (err) {
-        console.error('Error fetching trending content:', err);
+        console.error('Error fetching initial data:', err);
       }
     }
-    fetchTrending();
+
+    fetchInitialData();
   }, []);
 
   useEffect(() => {
@@ -285,9 +316,9 @@ function App() {
 
             <div className="flex justify-center gap-4 mb-6">
               <button
-                onClick={() => setSelectedTab('movie')}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
-                  selectedTab === 'movie'
+                onClick={() => setContentType('movie')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+                  contentType === 'movie'
                     ? 'bg-blue-500 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-100'
                 }`}
@@ -296,9 +327,9 @@ function App() {
                 Movies
               </button>
               <button
-                onClick={() => setSelectedTab('tv')}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
-                  selectedTab === 'tv'
+                onClick={() => setContentType('tv')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+                  contentType === 'tv'
                     ? 'bg-blue-500 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-100'
                 }`}
@@ -309,50 +340,54 @@ function App() {
             </div>
 
             <div className="space-y-8">
-              {selectedTab === 'movie' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {getFilteredAndSortedContent(movieRecommendations).map((movie) => (
-                    <ContentCard
-                      key={movie.id}
-                      content={movie}
+              {contentType === 'movie' ? (
+                <>
+                  <TrendingCarousel
+                    items={trendingMovies}
+                    type="movie"
+                    title="Trending Movies"
+                    onSelect={(item) => handleContentSelect(item)}
+                  />
+                  <TrendingCarousel
+                    items={topRatedMovies}
+                    type="movie"
+                    title="Top 20 Movies of All Time"
+                    onSelect={(item) => handleContentSelect(item)}
+                  />
+                  {movieGenres.map(genre => (
+                    <TrendingCarousel
+                      key={genre.id}
+                      items={genreContent[genre.id] || []}
                       type="movie"
-                      onSelect={handleContentSelect}
-                      isAuthenticated={!!user}
-                      isFavorite={favorites.some(
-                        f => f.content_id === movie.id && f.content_type === 'movie'
-                      )}
-                      onToggleFavorite={() => toggleFavorite(movie)}
+                      title={`Top ${genre.name} Movies`}
+                      onSelect={(item) => handleContentSelect(item)}
                     />
                   ))}
-                </div>
+                </>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {getFilteredAndSortedContent(tvRecommendations).map((show) => (
-                    <ContentCard
-                      key={show.id}
-                      content={show}
+                <>
+                  <TrendingCarousel
+                    items={trendingTVShows}
+                    type="tv"
+                    title="Trending TV Shows"
+                    onSelect={(item) => handleContentSelect(item)}
+                  />
+                  <TrendingCarousel
+                    items={topRatedTVShows}
+                    type="tv"
+                    title="Top 20 TV Shows of All Time"
+                    onSelect={(item) => handleContentSelect(item)}
+                  />
+                  {tvGenres.map(genre => (
+                    <TrendingCarousel
+                      key={genre.id}
+                      items={genreContent[genre.id] || []}
                       type="tv"
-                      onSelect={handleContentSelect}
-                      isAuthenticated={!!user}
-                      isFavorite={favorites.some(
-                        f => f.content_id === show.id && f.content_type === 'tv'
-                      )}
-                      onToggleFavorite={() => toggleFavorite(show)}
+                      title={`Top ${genre.name} TV Shows`}
+                      onSelect={(item) => handleContentSelect(item)}
                     />
                   ))}
-                </div>
-              )}
-
-              {selectedTab === 'movie' && movieRecommendations.length === 0 && (
-                <div className="text-center text-gray-500">
-                  No movie recommendations yet. Try adding some movies to your favorites!
-                </div>
-              )}
-
-              {selectedTab === 'tv' && tvRecommendations.length === 0 && (
-                <div className="text-center text-gray-500">
-                  No TV show recommendations yet. Try adding some TV shows to your favorites!
-                </div>
+                </>
               )}
             </div>
           </>
@@ -446,24 +481,55 @@ function App() {
 
             {!query && (
               <div className="space-y-8 mb-8">
-                <TrendingCarousel
-                  items={trendingMovies}
-                  type="movie"
-                  title="Trending Movies"
-                  onSelect={(item) => {
-                    setContentType('movie');
-                    handleContentSelect(item);
-                  }}
-                />
-                <TrendingCarousel
-                  items={trendingTVShows}
-                  type="tv"
-                  title="Trending TV Shows"
-                  onSelect={(item) => {
-                    setContentType('tv');
-                    handleContentSelect(item);
-                  }}
-                />
+                {contentType === 'movie' ? (
+                  <>
+                    <TrendingCarousel
+                      items={trendingMovies}
+                      type="movie"
+                      title="Trending Movies"
+                      onSelect={(item) => handleContentSelect(item)}
+                    />
+                    <TrendingCarousel
+                      items={topRatedMovies}
+                      type="movie"
+                      title="Top 20 Movies of All Time"
+                      onSelect={(item) => handleContentSelect(item)}
+                    />
+                    {movieGenres.map(genre => (
+                      <TrendingCarousel
+                        key={genre.id}
+                        items={genreContent[genre.id] || []}
+                        type="movie"
+                        title={`Top ${genre.name} Movies`}
+                        onSelect={(item) => handleContentSelect(item)}
+                      />
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    <TrendingCarousel
+                      items={trendingTVShows}
+                      type="tv"
+                      title="Trending TV Shows"
+                      onSelect={(item) => handleContentSelect(item)}
+                    />
+                    <TrendingCarousel
+                      items={topRatedTVShows}
+                      type="tv"
+                      title="Top 20 TV Shows of All Time"
+                      onSelect={(item) => handleContentSelect(item)}
+                    />
+                    {tvGenres.map(genre => (
+                      <TrendingCarousel
+                        key={genre.id}
+                        items={genreContent[genre.id] || []}
+                        type="tv"
+                        title={`Top ${genre.name} TV Shows`}
+                        onSelect={(item) => handleContentSelect(item)}
+                      />
+                    ))}
+                  </>
+                )}
               </div>
             )}
 
