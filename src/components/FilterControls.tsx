@@ -1,5 +1,6 @@
 import React from 'react';
-import { SlidersHorizontal, TrendingUp, Calendar, Star, ArrowUpNarrowWide, ArrowDownNarrowWide } from 'lucide-react';
+import { SlidersHorizontal, TrendingUp, Calendar, Star, ArrowUpNarrowWide, ArrowDownNarrowWide, Film } from 'lucide-react';
+import type { Genre } from '../types';
 
 interface FilterControlsProps {
   sortBy: 'popularity' | 'date-asc' | 'date-desc' | 'rating';
@@ -8,6 +9,9 @@ interface FilterControlsProps {
   onMinRatingChange: (rating: number) => void;
   yearFilter: number | null;
   onYearFilterChange: (year: number | null) => void;
+  genres: Genre[];
+  selectedGenre: number | null;
+  onGenreChange: (genreId: number | null) => void;
 }
 
 export function FilterControls({
@@ -17,6 +21,9 @@ export function FilterControls({
   onMinRatingChange,
   yearFilter,
   onYearFilterChange,
+  genres,
+  selectedGenre,
+  onGenreChange,
 }: FilterControlsProps) {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 50 }, (_, i) => currentYear - i);
@@ -75,6 +82,25 @@ export function FilterControls({
               Rating
             </button>
           </div>
+        </div>
+
+        <div className="flex-1 min-w-[200px]">
+          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <Film size={16} />
+            Filter by Genre
+          </label>
+          <select
+            value={selectedGenre || ''}
+            onChange={(e) => onGenreChange(e.target.value ? parseInt(e.target.value) : null)}
+            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          >
+            <option value="">All Genres</option>
+            {genres.map((genre) => (
+              <option key={genre.id} value={genre.id}>
+                {genre.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="flex-1 min-w-[200px]">
