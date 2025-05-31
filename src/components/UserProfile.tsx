@@ -3,7 +3,7 @@ import { X, Film, Tv } from 'lucide-react';
 import { FilterControls } from './FilterControls';
 import { ContentCard } from './MovieCard';
 import { supabase } from '../supabase';
-import type { Movie, TVShow, ContentType } from '../types';
+import type { Movie, TVShow, ContentType, Favorite } from '../types';
 
 interface UserProfileProps {
   userId: string;
@@ -13,6 +13,7 @@ interface UserProfileProps {
 
 export function UserProfile({ userId, onClose, onSelectContent }: UserProfileProps) {
   const [favorites, setFavorites] = useState<(Movie | TVShow)[]>([]);
+  const [favoriteRecords, setFavoriteRecords] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState<ContentType>('movie');
   const [sortBy, setSortBy] = useState<'popularity' | 'date-asc' | 'date-desc' | 'rating'>('popularity');
@@ -28,6 +29,8 @@ export function UserProfile({ userId, onClose, onSelectContent }: UserProfilePro
           .eq('user_id', userId);
 
         if (favoritesError) throw favoritesError;
+
+        setFavoriteRecords(favoritesData);
 
         const contentPromises = favoritesData.map(async (favorite) => {
           const response = await fetch(
@@ -54,6 +57,27 @@ export function UserProfile({ userId, onClose, onSelectContent }: UserProfilePro
 
     fetchFavorites();
   }, [userId]);
+
+  const handleToggleFavorite = async (content: Movie | TVShow) => {
+    const existing = favoriteRecords.find(
+      f => f.content_id === content.id && f.content_type === selectedTab
+    );
+
+    if (existing) {
+      const { error } = await supabase
+        .from('favorites')
+        .delete()
+        .eq('id', existing.id);
+
+      if (!error) {
+        setFavoriteRecords(favoriteRecords.filter(f => f.id !== existing.id));
+        setFavorites(favorites.filter(f => 
+          !('contentType' in f) || 
+          !(f.id === content.id && f.contentType === selectedTab)
+        ));
+      }
+    }
+  };
 
   const getFilteredAndSortedContent = (items: (Movie | TVShow)[]) => {
     let filtered = items.filter(item => 
@@ -147,6 +171,7 @@ export function UserProfile({ userId, onClose, onSelectContent }: UserProfilePro
                 onSelect={() => onSelectContent(content, selectedTab)}
                 isAuthenticated={true}
                 isFavorite={true}
+                onToggleFavorite={() => handleToggleFavorite(content)}
               />
             ))}
           </div>
