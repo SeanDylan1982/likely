@@ -308,6 +308,31 @@ function App() {
 
         {mode === 'recommendations' && (
           <>
+            <div className="flex justify-center gap-4 mb-6">
+              <button
+                onClick={() => setContentType('movie')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+                  contentType === 'movie'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <Film size={20} />
+                Movies
+              </button>
+              <button
+                onClick={() => setContentType('tv')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+                  contentType === 'tv'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <Tv size={20} />
+                TV Shows
+              </button>
+            </div>
+
             <FilterControls
               sortBy={sortBy}
               onSortChange={setSortBy}
