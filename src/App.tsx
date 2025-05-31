@@ -1,3 +1,5 @@
+import React, { useState } from 'react';
+
 // Previous App.tsx content with updated FilterControls usage
 const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
 
