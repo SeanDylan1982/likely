@@ -107,7 +107,6 @@ function App() {
     const fetchRecommendations = async () => {
       if (!favorites.length) return;
 
-      const contentType = selectedTab;
       const favoritesOfType = favorites.filter(f => f.content_type === contentType);
       
       const similarContentPromises = favoritesOfType.map(favorite => 
@@ -129,7 +128,7 @@ function App() {
     };
 
     fetchRecommendations();
-  }, [favorites, selectedTab]);
+  }, [favorites, contentType]);
 
   const fetchFavorites = async (userId: string) => {
     const { data, error } = await supabase
