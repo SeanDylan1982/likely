@@ -8,6 +8,7 @@ import { FilterControls } from './components/FilterControls';
 import { TrendingCarousel } from './components/TrendingCarousel';
 import { UserProfile } from './components/UserProfile';
 import { ContentModal } from './components/ContentModal';
+import { ThemeToggle } from './components/ThemeToggle';
 import { searchContent, getSimilarContent, getSearchSuggestions, getTrendingContent, getContentDetails, getTopRatedContent, getContentByGenre, getGenres } from './api';
 import { supabase } from './supabase';
 import type { Movie, TVShow, ContentType, User as UserType, Favorite, ContentDetails, Genre } from './types';
@@ -275,11 +276,12 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-8 text-gray-900 dark:text-gray-100">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold">Likely</h1>
           <div className="flex items-center gap-4">
+            <ThemeToggle />
             {user ? (
               <div className="flex items-center gap-4">
                 <button
@@ -314,7 +316,7 @@ function App() {
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
                   contentType === 'movie'
                     ? 'bg-blue-500 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
                 <Film size={20} />
@@ -325,7 +327,7 @@ function App() {
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
                   contentType === 'tv'
                     ? 'bg-blue-500 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
                 <Tv size={20} />
@@ -359,7 +361,7 @@ function App() {
             </div>
 
             {recommendations.length === 0 && (
-              <div className="text-center text-gray-500 mt-8">
+              <div className="text-center text-gray-500 dark:text-gray-400 mt-8">
                 No recommendations yet. Try adding some {contentType === 'movie' ? 'movies' : 'TV shows'} to your favorites!
               </div>
             )}
@@ -374,7 +376,7 @@ function App() {
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
                   contentType === 'movie'
                     ? 'bg-blue-500 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
                 <Film size={20} />
@@ -385,7 +387,7 @@ function App() {
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
                   contentType === 'tv'
                     ? 'bg-blue-500 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
                 <Tv size={20} />
@@ -404,7 +406,7 @@ function App() {
                   }}
                   onFocus={() => setShowSuggestions(true)}
                   placeholder={`Search for ${contentType === 'movie' ? 'a movie' : 'a TV show'}...`}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:text-gray-100"
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
                   {query && (
@@ -414,25 +416,25 @@ function App() {
                         setQuery('');
                         setSuggestions([]);
                       }}
-                      className="text-gray-500 hover:text-gray-700"
+                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                     >
                       <X size={16} />
                     </button>
                   )}
                   <button
                     type="submit"
-                    className="text-gray-500 hover:text-gray-700"
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   >
                     <Search size={20} />
                   </button>
                 </div>
 
                 {showSuggestions && suggestions.length > 0 && (
-                  <div className="absolute z-10 w-full bg-white mt-1 rounded-lg shadow-lg border border-gray-200">
+                  <div className="absolute z-10 w-full bg-white dark:bg-gray-800 mt-1 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
                     {suggestions.map((item) => (
                       <div
                         key={item.id}
-                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                        className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                         onClick={() => handleSuggestionClick(item)}
                       >
                         <div className="font-medium">
@@ -440,7 +442,7 @@ function App() {
                             ? (item as Movie).title 
                             : (item as TVShow).name}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
                           {new Date(
                             contentType === 'movie'
                               ? (item as Movie).release_date
@@ -543,7 +545,7 @@ function App() {
             )}
 
             {!loading && content.length === 0 && (
-              <div className="text-center text-gray-500">
+              <div className="text-center text-gray-500 dark:text-gray-400">
                 {mode === 'search'
                   ? `Search for ${contentType === 'movie' ? 'movies' : 'TV shows'} to get started`
                   : `No similar ${contentType === 'movie' ? 'movies' : 'TV shows'} found`}
