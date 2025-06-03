@@ -59,9 +59,8 @@ function App() {
         setTrendingTVShows(tvShows as TVShow[]);
         setTopRatedMovies(topMovies as Movie[]);
         setTopRatedTVShows(topTVShows as TVShow[]);
-        setMovieGenres(movieGenreList);
-        setTvGenres(tvGenreList);
 
+        // Fetch content for each genre
         const movieGenreContentPromises = movieGenreList.map(genre => 
           getContentByGenre('movie', genre.id).then(content => [genre.id, content])
         );
@@ -69,8 +68,10 @@ function App() {
           getContentByGenre('tv', genre.id).then(content => [genre.id, content])
         );
 
-        const movieGenreResults = await Promise.all(movieGenreContentPromises);
-        const tvGenreResults = await Promise.all(tvGenreContentPromises);
+        const [movieGenreResults, tvGenreResults] = await Promise.all([
+          Promise.all(movieGenreContentPromises),
+          Promise.all(tvGenreContentPromises)
+        ]);
 
         const allGenreContent: Record<number, Movie[] | TVShow[]> = {};
         [...movieGenreResults, ...tvGenreResults].forEach(([genreId, content]) => {
@@ -78,6 +79,17 @@ function App() {
         });
 
         setGenreContent(allGenreContent);
+
+        // Filter genres that have content
+        const movieGenresWithContent = movieGenreList.filter(genre => 
+          allGenreContent[genre.id] && (allGenreContent[genre.id] as Movie[]).length > 0
+        );
+        const tvGenresWithContent = tvGenreList.filter(genre => 
+          allGenreContent[genre.id] && (allGenreContent[genre.id] as TVShow[]).length > 0
+        );
+
+        setMovieGenres(movieGenresWithContent);
+        setTvGenres(tvGenresWithContent);
       } catch (err) {
         console.error('Error fetching initial data:', err);
       }
