@@ -4,19 +4,12 @@ export function useTheme() {
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === 'undefined') return false;
     
-    const root = window.document.documentElement;
     const savedTheme = localStorage.getItem('theme');
-    
     if (savedTheme) {
       return savedTheme === 'dark';
     }
     
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (prefersDark) {
-      root.classList.add('dark');
-    }
-    
-    return prefersDark;
+    return false; // Default to light theme
   });
 
   useEffect(() => {
