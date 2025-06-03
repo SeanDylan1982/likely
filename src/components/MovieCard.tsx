@@ -25,7 +25,7 @@ export function ContentCard({
     : (content as TVShow).first_air_date;
 
   return (
-    <div className="bg-white rounded-lg shadow-lg overflow-hidden relative group">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden relative group">
       <div 
         className="cursor-pointer transform transition hover:scale-105"
         onClick={() => onSelect(content)}
@@ -44,14 +44,14 @@ export function ContentCard({
           </div>
         </div>
         <div className="p-4">
-          <h3 className="font-bold text-lg mb-2 line-clamp-1">{title}</h3>
-          <p className="text-gray-600 text-sm mb-2 line-clamp-2">{content.overview}</p>
+          <h3 className="font-bold text-lg mb-2 line-clamp-1 dark:text-white">{title}</h3>
+          <p className="text-gray-600 dark:text-gray-300 text-sm mb-2 line-clamp-2">{content.overview}</p>
           <div className="flex items-center justify-between">
             <span className="flex items-center text-yellow-500">
               <Star size={16} className="fill-current" />
               <span className="ml-1">{content.vote_average.toFixed(1)}</span>
             </span>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-gray-500 dark:text-gray-400">
               {new Date(date).getFullYear()}
             </span>
           </div>
@@ -64,11 +64,11 @@ export function ContentCard({
             e.stopPropagation();
             onToggleFavorite();
           }}
-          className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:bg-gray-100"
+          className="absolute top-2 right-2 p-2 bg-white dark:bg-gray-800 rounded-full shadow-md hover:bg-gray-100 dark:hover:bg-gray-700"
         >
           <Heart
             size={20}
-            className={`${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-500'}`}
+            className={`${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-500 dark:text-gray-400'}`}
           />
         </button>
       )}
