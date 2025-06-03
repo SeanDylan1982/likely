@@ -107,13 +107,13 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Your Profile</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Your Profile</h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
           >
             <X size={24} />
           </button>
@@ -125,7 +125,7 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
             className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
               selectedTab === 'movie'
                 ? 'bg-blue-500 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100'
+                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600'
             }`}
           >
             <Film size={20} />
@@ -136,7 +136,7 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
             className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
               selectedTab === 'tv'
                 ? 'bg-blue-500 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100'
+                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600'
             }`}
           >
             <Tv size={20} />
@@ -151,13 +151,10 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
           onMinRatingChange={setMinRating}
           yearFilter={yearFilter}
           onYearFilterChange={setYearFilter}
-          genres={selectedTab === 'movie' ? movieGenres : tvGenres}
-          selectedGenre={selectedGenre}
-          onGenreChange={setSelectedGenre}
         />
 
         {loading ? (
-          <div className="text-center py-8">Loading your favorites...</div>
+          <div className="text-center py-8 text-gray-600 dark:text-gray-300">Loading your favorites...</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
             {getFilteredAndSortedContent(favorites).map((content) => (
@@ -175,7 +172,7 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
         )}
 
         {!loading && getFilteredAndSortedContent(favorites).length === 0 && (
-          <div className="text-center text-gray-500 py-8">
+          <div className="text-center text-gray-500 dark:text-gray-400 py-8">
             No {selectedTab === 'movie' ? 'movies' : 'TV shows'} in your favorites yet.
           </div>
         )}
