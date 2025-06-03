@@ -572,6 +572,11 @@ function App() {
           content={selectedContentDetails}
           type={contentType}
           onClose={() => setIsModalOpen(false)}
+          isAuthenticated={!!user}
+          isFavorite={favorites.some(
+            f => f.content_id === selectedContentDetails.id && f.content_type === contentType
+          )}
+          onToggleFavorite={() => toggleFavorite(selectedContentDetails)}
         />
       )}
     </div>
