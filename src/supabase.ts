@@ -8,18 +8,3 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-// Database schema:
-/*
-Table: favorites
-  - id: uuid (primary key)
-  - user_id: uuid (foreign key to auth.users.id)
-  - content_id: integer
-  - content_type: text
-  - created_at: timestamp with time zone
-
-Policies:
-  - Enable read access for users to their own favorites
-  - Enable insert for authenticated users (their own favorites)
-  - Enable delete for users on their own favorites
-*/
