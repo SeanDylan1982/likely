@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { X, Film, Tv } from 'lucide-react';
 import { FilterControls } from './FilterControls';
 import { ContentCard } from './MovieCard';
+import { ContentModal } from './ContentModal';
 import { supabase } from '../supabase';
 import { getContentDetails } from '../api';
-import type { Movie, TVShow, ContentType, Favorite } from '../types';
+import type { Movie, TVShow, ContentType, Favorite, ContentDetails } from '../types';
 
 interface UserProfileProps {
   userId: string;
@@ -19,8 +20,8 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
   const [yearFilter, setYearFilter] = useState<number | null>(null);
   const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const [movieGenres, setMovieGenres] = useState<{ id: number; name: string; }[]>([]);
-  const [tvGenres, setTvGenres] = useState<{ id: number; name: string; }[]>([]);
+  const [selectedContent, setSelectedContent] = useState<ContentDetails | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchFavorites();
@@ -51,6 +52,17 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
       console.error('Error fetching favorites:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleContentSelect = async (content: Movie | TVShow) => {
+    try {
+      const contentType = 'contentType' in content ? content.contentType : selectedTab;
+      const details = await getContentDetails(content.id, contentType);
+      setSelectedContent(details);
+      setIsModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching content details:', error);
     }
   };
 
@@ -162,7 +174,7 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
                 key={content.id}
                 content={content}
                 type={'contentType' in content ? content.contentType : selectedTab}
-                onSelect={() => {}}
+                onSelect={() => handleContentSelect(content)}
                 isAuthenticated={true}
                 isFavorite={true}
                 onToggleFavorite={() => handleRemoveFavorite(content)}
@@ -175,6 +187,17 @@ export function UserProfile({ userId, onClose }: UserProfileProps) {
           <div className="text-center text-gray-500 dark:text-gray-400 py-8">
             No {selectedTab === 'movie' ? 'movies' : 'TV shows'} in your favorites yet.
           </div>
+        )}
+
+        {selectedContent && isModalOpen && (
+          <ContentModal
+            content={selectedContent}
+            type={'contentType' in selectedContent ? selectedContent.contentType : selectedTab}
+            onClose={() => setIsModalOpen(false)}
+            isAuthenticated={true}
+            isFavorite={true}
+            onToggleFavorite={() => handleRemoveFavorite(selectedContent)}
+          />
         )}
       </div>
     </div>
